@@ -724,47 +724,59 @@
             elements.videoFileName.textContent = file.name;
             elements.fileSizeBadge.textContent = formatBytes(file.size);
             elements.metaType.textContent = file.type || 'video/mp4';
+        // STEP 2: Gemini AI Metadata Generation (Updated with Auto-Retry & Fallback)
+        async function fetchGeminiWithRetryAndFallback(payload, apiKey) {
+            // Priority models: primary model -> fallbacks
+            const models = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+            const maxRetriesPerModel = 3;
+            let lastError = null;
 
-            // Create Object URL for preview
-            const videoUrl = URL.createObjectURL(file);
-            elements.videoPreview.src = videoUrl;
+            for (const model of models) {
+                let delay = 2000; // start 2 sec delay
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-            elements.videoPreview.onloadedmetadata = () => {
-                state.videoMeta.duration = elements.videoPreview.duration;
-                state.videoMeta.width = elements.videoPreview.videoWidth;
-                state.videoMeta.height = elements.videoPreview.videoHeight;
+                for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
+                    try {
+                        elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Mencoba model ${model} (Upaya ${attempt}/${maxRetriesPerModel})...</span>`;
 
-                elements.metaDuration.textContent = formatSeconds(elements.videoPreview.duration);
-                elements.metaResolution.textContent = `${elements.videoPreview.videoWidth} x ${elements.videoPreview.videoHeight}`;
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
 
-                // Seek to 20% mark for thumbnail capture
-                elements.videoPreview.currentTime = Math.min(2.0, elements.videoPreview.duration / 2);
-            };
+                        if (response.ok) {
+                            return await response.json();
+                        }
 
-            elements.videoPreview.onseeked = () => {
-                extractFrameSnapshot();
-            };
-
-            elements.dropZone.classList.add('hidden');
-            elements.videoInfoCard.classList.remove('hidden');
-            showToast('Video berhasil dimuat!', 'success');
+                        // Handle rate limit (429) or high demand/server busy (503/500)
+                        if (response.status === 429 || response.status === 503 || response.status === 500) {
+                            const errJson = await response.json().catch(() => ({}));
+                            lastError = errJson.error?.message || `HTTP ${response.status} (High Demand)`;
+                            
+                            if (attempt < maxRetriesPerModel) {
+                                elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Server sibuk. Menunggu ${delay/1000}d lalu mencoba lagi...</span>`;
+                                await new Promise(res => setTimeout(res, delay));
+                                delay *= 2; // exponential backoff
+                                continue;
+                            }
+                        } else {
+                            const errJson = await response.json().catch(() => ({}));
+                            throw new Error(errJson.error?.message || `HTTP ${response.status}`);
+                        }
+                    } catch (err) {
+                        lastError = err.message;
+                        if (attempt < maxRetriesPerModel && err.message.includes('Fetch')) {
+                            await new Promise(res => setTimeout(res, delay));
+                            delay *= 2;
+                            continue;
+                        }
+                    }
+                }
+            }
+            throw new Error(lastError || 'Semua model Gemini sedang sibuk. Silakan coba beberapa saat lagi.');
         }
 
-        // Extract Snapshot Frame via HTML5 Canvas
-        function extractFrameSnapshot() {
-            const vid = elements.videoPreview;
-            const canvas = elements.frameCanvas;
-            canvas.width = vid.videoWidth || 640;
-            canvas.height = vid.videoHeight || 360;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-
-            state.snapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
-            elements.snapshotImg.src = state.snapshotBase64;
-        }
-
-        // STEP 2: Gemini AI Metadata Generation
         async function generateAiMetadata() {
             if (!state.geminiApiKey) {
                 showToast('Harap isi Gemini API Key di panel bagian atas terlebih dahulu!', 'error');
@@ -827,20 +839,8 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                     }
                 };
 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${state.geminiApiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errJson = await response.json();
-                    throw new Error(errJson.error?.message || 'Gagal menghubungi Gemini API.');
-                }
-
-                const result = await response.json();
+                // Execute with retry & fallback mechanism
+                const result = await fetchGeminiWithRetryAndFallback(payload, state.geminiApiKey);
                 const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
                 if (!jsonText) {
