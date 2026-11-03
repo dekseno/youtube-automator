@@ -587,10 +587,10 @@
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-layer-group text-brand-500"></i>
-                        <h3 class="font-bold text-slate-200 text-sm">Koleksi Video & Shorts (Layout Horisontal)</h3>
+                        <i class="fa-brands fa-youtube text-red-500 text-lg"></i>
+                        <h3 class="font-bold text-slate-200 text-sm">Daftar Konten Channel (Tampilan YT Studio HP)</h3>
                     </div>
-                    <span class="text-xs text-slate-400"><i class="fa-solid fa-arrows-left-right mr-1"></i>Geser Horisontal</span>
+                    <span class="text-xs text-slate-400"><i class="fa-solid fa-bars-staggered mr-1"></i>List Vertikal</span>
                 </div>
 
                 <!-- Empty State -->
@@ -601,9 +601,9 @@
                     <p class="text-xs text-slate-400">Belum ada koleksi video/shorts yang diunggah atau dijadwalkan.</p>
                 </div>
 
-                <!-- Horizontal Scroll Container -->
-                <div id="history-horizontal-container" class="hidden flex gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-thin">
-                    <!-- Cards will be dynamically rendered here -->
+                <!-- Vertical List Container (YT Studio Mobile Style) -->
+                <div id="history-vertical-container" class="hidden flex flex-col gap-3 pt-1">
+                    <!-- Vertical list cards will be dynamically rendered here -->
                 </div>
             </div>
         </div>
@@ -782,7 +782,7 @@
             statVideosCount: document.getElementById('stat-videos-count'),
             statScheduledCount: document.getElementById('stat-scheduled-count'),
             historyEmptyState: document.getElementById('history-empty-state'),
-            historyHorizontalContainer: document.getElementById('history-horizontal-container')
+            historyVerticalContainer: document.getElementById('history-vertical-container')
         };
 
         // Initialize App
@@ -1147,53 +1147,63 @@
 
             if (history.length === 0) {
                 if (elements.historyEmptyState) elements.historyEmptyState.classList.remove('hidden');
-                if (elements.historyHorizontalContainer) elements.historyHorizontalContainer.classList.add('hidden');
+                if (elements.historyVerticalContainer) elements.historyVerticalContainer.classList.add('hidden');
                 return;
             }
 
             if (elements.historyEmptyState) elements.historyEmptyState.classList.add('hidden');
-            if (elements.historyHorizontalContainer) {
-                elements.historyHorizontalContainer.classList.remove('hidden');
-                elements.historyHorizontalContainer.innerHTML = '';
+            if (elements.historyVerticalContainer) {
+                elements.historyVerticalContainer.classList.remove('hidden');
+                elements.historyVerticalContainer.innerHTML = '';
             }
 
+            // Render vertical list items matching YouTube Studio Mobile Layout
             history.forEach((item, index) => {
                 const card = document.createElement('div');
-                card.className = 'w-72 shrink-0 bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between gap-2 snap-start hover:border-slate-700 transition shadow-lg';
+                card.className = 'bg-slate-950 border border-slate-800/90 rounded-xl p-3 flex flex-row items-center justify-between gap-3.5 hover:border-slate-700 transition shadow-md';
 
                 const isShort = item.isShort;
                 const badgeType = isShort 
-                    ? '<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Shorts</span>'
-                    : '<span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-bold flex items-center gap-1"><i class="fa-solid fa-film"></i> Video</span>';
+                    ? '<span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-bold flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Shorts</span>'
+                    : '<span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[9px] font-bold flex items-center gap-1"><i class="fa-solid fa-film"></i> Video</span>';
 
-                let privacyBadge = '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Pribadi</span>';
-                if (item.privacy === 'public') privacyBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px]">Publik</span>';
-                if (item.privacy === 'unlisted') privacyBadge = '<span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px]">Unlisted</span>';
-                if (item.privacy === 'scheduled') privacyBadge = '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px]">Dijadwalkan</span>';
+                let privacyIcon = '<span class="flex items-center gap-1 text-slate-400 text-[11px]"><i class="fa-solid fa-lock text-slate-500"></i> Pribadi</span>';
+                if (item.privacy === 'public') privacyIcon = '<span class="flex items-center gap-1 text-emerald-400 text-[11px]"><i class="fa-solid fa-globe"></i> Publik</span>';
+                if (item.privacy === 'unlisted') privacyIcon = '<span class="flex items-center gap-1 text-purple-400 text-[11px]"><i class="fa-solid fa-link"></i> Tidak Publik</span>';
+                if (item.privacy === 'scheduled') privacyIcon = '<span class="flex items-center gap-1 text-amber-400 text-[11px]"><i class="fa-solid fa-clock"></i> Dijadwalkan</span>';
 
                 const dateDisplay = item.publishAt ? new Date(item.publishAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : new Date(item.uploadDate).toLocaleDateString('id-ID');
 
                 card.innerHTML = `
-                    <div class="aspect-video bg-slate-900 rounded-lg overflow-hidden relative border border-slate-800/80">
+                    <div class="w-28 sm:w-36 aspect-video bg-slate-900 rounded-lg overflow-hidden relative shrink-0 border border-slate-800">
                         <img src="${item.thumbnail || 'https://placehold.co/600x400/1e293b/f43f5e?text=No+Thumbnail'}" class="w-full h-full object-cover">
-                        <div class="absolute top-2 left-2 flex gap-1">${badgeType}</div>
-                        <div class="absolute bottom-2 right-2">${privacyBadge}</div>
+                        <div class="absolute bottom-1 right-1">${badgeType}</div>
                     </div>
-                    <div class="space-y-1">
-                        <h4 class="font-bold text-slate-200 text-xs line-clamp-2 leading-snug" title="${item.title}">${item.title}</h4>
-                        <p class="text-[10px] text-slate-400 flex items-center gap-1 truncate"><i class="fa-solid fa-tv text-brand-500"></i> ${item.channelTitle || 'Channel Youtube'}</p>
-                        <p class="text-[10px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-calendar-day"></i> ${item.privacy === 'scheduled' ? 'Jadwal Tayang:' : 'Diunggah:'} ${dateDisplay}</p>
+                    <div class="flex-1 min-w-0 space-y-1">
+                        <h4 class="font-bold text-slate-100 text-xs sm:text-sm line-clamp-2 leading-snug" title="${item.title}">${item.title}</h4>
+                        <div class="flex items-center gap-2 text-[11px] flex-wrap">
+                            ${privacyIcon}
+                            <span class="text-slate-600">•</span>
+                            <span class="text-slate-400 text-[11px]"><i class="fa-regular fa-calendar mr-1"></i>${item.privacy === 'scheduled' ? 'Jadwal:' : 'Tgl:'} ${dateDisplay}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 truncate flex items-center gap-1">
+                            <i class="fa-solid fa-tv text-brand-500"></i> ${item.channelTitle || 'Channel Youtube'}
+                            <span class="text-slate-700">|</span>
+                            <span class="font-mono text-slate-400 text-[10px] truncate">${item.filename || 'File'}</span>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center pt-2 border-t border-slate-900 text-[10px]">
-                        <a href="https://youtu.be/${item.id}" target="_blank" class="text-brand-400 hover:underline truncate max-w-[150px] flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Tonton Video
+                    <div class="flex items-center gap-1 shrink-0">
+                        <a href="https://youtu.be/${item.id}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-brand-400 flex items-center justify-center text-xs transition" title="Buka di YouTube">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         </a>
-                        <button onclick="deleteHistoryItem('${item.id || index}')" class="text-slate-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <button onclick="deleteHistoryItem('${item.id || index}')" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-red-950/50 border border-slate-800 hover:border-red-800/50 text-slate-400 hover:text-red-400 flex items-center justify-center text-xs transition" title="Hapus Riwayat">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </div>
                 `;
 
-                if (elements.historyHorizontalContainer) {
-                    elements.historyHorizontalContainer.appendChild(card);
+                if (elements.historyVerticalContainer) {
+                    elements.historyVerticalContainer.appendChild(card);
                 }
             });
         }
@@ -2003,7 +2013,13 @@ Balas HANYA dalam format JSON valid berikut tanpa penjelasan tambahan:
                             thumbnail: state.snapshotBase64
                         });
 
-                        // Fetch updated channel videos
+                        // Clear input data for Tab 1, 2, 3
+                        resetUploadWorkflow();
+
+                        // Redirect automatically to Tab 4 (Koleksi & Multi-Channel)
+                        switchStep(4);
+
+                        // Fetch updated channel videos from API
                         fetchLiveChannelVideos(activeCh);
 
                     } else {
@@ -2015,19 +2031,49 @@ Balas HANYA dalam format JSON valid berikut tanpa penjelasan tambahan:
                 };
 
                 xhr.onerror = () => {
-                    showToast('Terjadi kesalahan jaringan saat upload.', 'error');
+                    showToast('Gagal koneksi saat mengunggah video.', 'error');
+                    elements.uploadStatusText.textContent = 'Proses upload gagal.';
                     elements.btnStartUpload.disabled = false;
                     elements.btnStartUpload.classList.remove('opacity-50');
                 };
 
+                // Send the video binary blob to YouTube upload session
                 xhr.send(state.renamedFile);
-
             } catch (err) {
-                console.error(err);
-                showToast(err.message, 'error');
+                showToast(`Gagal Upload: ${err.message}`, 'error');
+                elements.uploadStatusText.textContent = 'Proses upload gagal.';
                 elements.btnStartUpload.disabled = false;
                 elements.btnStartUpload.classList.remove('opacity-50');
             }
+        }
+
+        // Reset all inputs & data from Step 1, Step 2, and Step 3 after successful upload
+        function resetUploadWorkflow() {
+            state.selectedFile = null;
+            state.renamedFile = null;
+            state.snapshotBase64 = null;
+            state.thumbnails = [];
+            state.selectedThumbnailIndex = 0;
+            state.aiResults = { title: '', description: '', tags: '', suggestedFilename: '' };
+
+            if (elements.videoFileInput) elements.videoFileInput.value = '';
+            if (elements.videoPreview) elements.videoPreview.src = '';
+            if (elements.videoInfoCard) elements.videoInfoCard.classList.add('hidden');
+            if (elements.snapshotImg) elements.snapshotImg.src = '';
+            if (elements.thumbnailGallery) elements.thumbnailGallery.innerHTML = '';
+            if (elements.aiFilenameInput) elements.aiFilenameInput.value = '';
+            if (elements.aiTitleInput) elements.aiTitleInput.value = '';
+            if (elements.aiProductTags) elements.aiProductTags.value = '';
+            if (elements.aiDescInput) elements.aiDescInput.value = '';
+            if (elements.aiTagsInput) elements.aiTagsInput.value = '';
+            if (elements.aiContextHint) elements.aiContextHint.value = '';
+            if (elements.titleCharCount) elements.titleCharCount.textContent = '0/100';
+
+            if (elements.uploadProgressContainer) elements.uploadProgressContainer.classList.add('hidden');
+            if (elements.uploadProgressBar) elements.uploadProgressBar.style.width = '0%';
+            if (elements.uploadPercentage) elements.uploadPercentage.textContent = '0%';
+
+            showToast('Form upload telah dibersihkan & siap untuk video berikutnya.', 'info');
         }
 
         // Sync Final Summary text to Step 3
