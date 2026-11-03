@@ -674,6 +674,16 @@
 
         const elements = {};
 
+        // Helper: Determine effective visibility status (Handles YouTube API 'private' with future 'publishAt')
+        function getEffectiveVisibility(v) {
+            if (!v) return 'public';
+            const isFuture = v.publishAt && new Date(v.publishAt) > new Date();
+            if (v.privacy === 'scheduled' || isFuture) {
+                return 'scheduled';
+            }
+            return v.privacy || 'public';
+        }
+
         // Toast Notification System
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1569,9 +1579,23 @@ Hasilkan metadata YouTube lengkap format JSON murni:
                 combined = combined.filter(v => v.channelId === state.filterConfig.selectedChannelId);
             }
 
+            // Calculate overall channel stats before visibility filters
+            const total = combined.length;
+            const shorts = combined.filter(v => v.isShort).length;
+            const regular = total - shorts;
+            const scheduled = combined.filter(v => getEffectiveVisibility(v) === 'scheduled').length;
+
+            if (elements.statTotalCount) elements.statTotalCount.textContent = total;
+            if (elements.statShortsCount) elements.statShortsCount.textContent = shorts;
+            if (elements.statVideosCount) elements.statVideosCount.textContent = regular;
+            if (elements.statScheduledCount) elements.statScheduledCount.textContent = scheduled;
+
             // Filter by visibility
             if (state.filterConfig.visibility.length > 0) {
-                combined = combined.filter(v => state.filterConfig.visibility.includes(v.privacy));
+                combined = combined.filter(v => {
+                    const effVis = getEffectiveVisibility(v);
+                    return state.filterConfig.visibility.includes(effVis);
+                });
             }
             
             // Filter by views
@@ -1590,17 +1614,6 @@ Hasilkan metadata YouTube lengkap format JSON murni:
             } else {
                 combined.sort((a, b) => new Date(b.publishAt || b.uploadDate) - new Date(a.publishAt || a.uploadDate));
             }
-
-            // Update stats
-            const total = combined.length;
-            const shorts = combined.filter(v => v.isShort).length;
-            const regular = total - shorts;
-            const scheduled = combined.filter(v => v.privacy === 'scheduled' || (v.publishAt && new Date(v.publishAt) > new Date())).length;
-
-            if (elements.statTotalCount) elements.statTotalCount.textContent = total;
-            if (elements.statShortsCount) elements.statShortsCount.textContent = shorts;
-            if (elements.statVideosCount) elements.statVideosCount.textContent = regular;
-            if (elements.statScheduledCount) elements.statScheduledCount.textContent = scheduled;
 
             const activeChips = document.getElementById('active-filter-chips');
             const activeTagsBar = document.getElementById('active-filter-tags');
@@ -1639,7 +1652,8 @@ Hasilkan metadata YouTube lengkap format JSON murni:
                 elements.historyVerticalContainer.innerHTML = '';
 
                 combined.forEach(item => {
-                    const isScheduled = item.privacy === 'scheduled' || (item.publishAt && new Date(item.publishAt) > new Date());
+                    const effVis = getEffectiveVisibility(item);
+                    const isScheduled = effVis === 'scheduled';
                     const pubDate = new Date(item.publishAt || item.uploadDate);
                     const formattedDate = pubDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ', ' + pubDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
