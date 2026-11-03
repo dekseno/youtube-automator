@@ -119,8 +119,27 @@
                     </div>
                 </div>
 
+                <!-- Gemini Model Selector Dropdown -->
+                <div class="lg:col-span-1">
+                    <label class="block text-xs font-medium text-slate-400 mb-1 flex justify-between">
+                        <span>Pilih Model Gemini</span>
+                        <button type="button" id="btn-fetch-models" class="text-brand-400 hover:underline text-[10px] flex items-center gap-1">
+                            <i class="fa-solid fa-arrows-rotate"></i> Update List
+                        </button>
+                    </label>
+                    <select id="select-gemini-model" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="gemini-2.5-flash" selected>gemini-2.5-flash (Tercepat/Rekomendasi)</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Standard)</option>
+                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Ringan)</option>
+                        <option value="gemini-3.6-flash">gemini-3.6-flash (Performa)</option>
+                        <option value="gemini-3.8-flash">gemini-3.8-flash (Terbaru)</option>
+                        <option value="gemini-2.5-pro">gemini-2.5-pro (Tingkat Tinggi/Pro)</option>
+                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Eksperimental)</option>
+                    </select>
+                </div>
+
                 <!-- Google OAuth Client ID Input -->
-                <div class="lg:col-span-3">
+                <div class="lg:col-span-2">
                     <label class="block text-xs font-medium text-slate-400 mb-1 flex justify-between">
                         <span>Google Client ID (OAuth 2.0)</span>
                         <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-500 hover:underline text-[11px]">Google Cloud Console <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
@@ -634,6 +653,7 @@
         // State Management
         const state = {
             geminiApiKey: '',
+            selectedGeminiModel: 'gemini-2.5-flash',
             oauthClientId: '',
             defaultPrivacy: 'private',
             defaultCategory: '22',
@@ -672,6 +692,8 @@
             toggleSettingsText: document.getElementById('toggle-settings-text'),
             
             inputGeminiKey: document.getElementById('input-gemini-key'),
+            selectGeminiModel: document.getElementById('select-gemini-model'),
+            btnFetchModels: document.getElementById('btn-fetch-models'),
             inputOAuthClientId: document.getElementById('input-oauth-client-id'),
             defaultPrivacySelect: document.getElementById('default-privacy-select'),
             defaultCategorySelect: document.getElementById('default-category-select'),
@@ -774,6 +796,7 @@
         // Load Persisted API Keys & Defaults
         function loadSavedKeys() {
             const savedGemini = localStorage.getItem('yt_automator_gemini_key');
+            const savedModel = localStorage.getItem('yt_automator_gemini_model');
             const savedOAuth = localStorage.getItem('yt_automator_oauth_id');
             const savedPrivacy = localStorage.getItem('yt_automator_def_privacy');
             const savedCategory = localStorage.getItem('yt_automator_def_category');
@@ -784,6 +807,10 @@
                 state.geminiApiKey = savedGemini;
                 elements.inputGeminiKey.value = savedGemini;
                 updateStatusBadge(elements.geminiStatus, true, 'Gemini AI: Ready');
+            }
+            if (savedModel && elements.selectGeminiModel) {
+                state.selectedGeminiModel = savedModel;
+                elements.selectGeminiModel.value = savedModel;
             }
             if (savedOAuth) {
                 state.oauthClientId = savedOAuth;
@@ -811,32 +838,66 @@
             }
         }
 
-        // Multi-Channel & Session Persistence
+        // Load Persisted Connected Channels
         function loadConnectedChannels() {
             try {
-                const saved = localStorage.getItem('yt_automator_connected_channels');
-                state.connectedChannels = saved ? JSON.parse(saved) : [];
+                const savedChannels = localStorage.getItem('yt_automator_connected_channels');
+                state.connectedChannels = savedChannels ? JSON.parse(savedChannels) : [];
+                state.activeChannelId = localStorage.getItem('yt_automator_active_channel_id') || (state.connectedChannels[0]?.id || null);
+
+                updateChannelDropdowns();
+
+                if (state.activeChannelId) {
+                    const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+                    if (activeCh) {
+                        state.googleAccessToken = activeCh.token;
+                        updateOAuthStatusUI(activeCh, Date.now() >= activeCh.expiresAt);
+                    }
+                }
             } catch (e) {
+                console.error('Failed to load connected channels:', e);
                 state.connectedChannels = [];
             }
+        }
 
-            const activeId = localStorage.getItem('yt_automator_active_channel_id');
-            if (activeId && state.connectedChannels.some(c => c.id === activeId)) {
-                state.activeChannelId = activeId;
-            } else if (state.connectedChannels.length > 0) {
-                state.activeChannelId = state.connectedChannels[0].id;
+        // Fetch Live Gemini Models List from API
+        async function fetchAvailableGeminiModels(apiKey) {
+            if (!apiKey) {
+                showToast('Isi Gemini API Key terlebih dahulu.', 'error');
+                return;
             }
 
-            updateChannelDropdowns();
+            try {
+                if (elements.btnFetchModels) {
+                    elements.btnFetchModels.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memuat...';
+                }
 
-            // Set current token if active channel token is still valid
-            const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
-            if (activeCh) {
-                if (Date.now() < activeCh.expiresAt) {
-                    state.googleAccessToken = activeCh.token;
-                    updateOAuthStatusUI(activeCh);
-                } else {
-                    updateOAuthStatusUI(activeCh, true); // Expired token
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                const generateModels = (data.models || []).filter(m => 
+                    m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
+                );
+
+                if (generateModels.length > 0) {
+                    elements.selectGeminiModel.innerHTML = '';
+                    generateModels.forEach(m => {
+                        const modelName = m.name.replace('models/', '');
+                        const opt = document.createElement('option');
+                        opt.value = modelName;
+                        opt.textContent = `${modelName} (${m.displayName || 'Generative'})`;
+                        if (modelName === state.selectedGeminiModel) opt.selected = true;
+                        elements.selectGeminiModel.appendChild(opt);
+                    });
+                    showToast(`Berhasil memperbarui ${generateModels.length} model Gemini aktif!`, 'success');
+                }
+            } catch (err) {
+                console.warn('Gagal fetch list model:', err);
+                showToast(`Gagal update model list: ${err.message}`, 'error');
+            } finally {
+                if (elements.btnFetchModels) {
+                    elements.btnFetchModels.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Update List';
                 }
             }
         }
@@ -1284,13 +1345,15 @@
                 throw new Error('Gemini API Key belum diisi. Silakan isi di bagian Pengaturan atas.');
             }
 
-            const models = [
+            // Put user selected model first, followed by default fallbacks
+            const models = Array.from(new Set([
+                state.selectedGeminiModel || 'gemini-2.5-flash',
+                'gemini-2.5-flash',
+                'gemini-1.5-flash',
                 'gemini-3.6-flash',
                 'gemini-3.8-flash',
-                'gemini-3.5-flash-lite',
-                'gemini-2.5-flash',
-                'gemini-1.5-flash'
-            ];
+                'gemini-3.5-flash-lite'
+            ]));
 
             let lastError = null;
 
@@ -1380,7 +1443,7 @@ Tugas Anda:
 3. "tags": Tag YouTube yang dipisahkan koma (minimal 10 tag).
 4. "suggestedFilename": Nama berkas SEO-friendly dengan huruf kecil, dipisahkan tanda strip (-) dan diakhiri .mp4 (contoh: cara-membuat-sepatu-lokal.mp4).
 
-Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
+Balas HANYA dalam format JSON valid berikut tanpa penjelasan tambahan:
 {
   "title": "...",
   "description": "...",
@@ -1404,7 +1467,8 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
                 }],
                 generationConfig: {
                     temperature: 0.7,
-                    maxOutputTokens: 1000
+                    maxOutputTokens: 1000,
+                    responseMimeType: "application/json"
                 }
             };
 
@@ -1414,8 +1478,14 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
                 const data = await fetchGeminiWithRetryAndFallback(payload);
                 const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 
-                const cleanedJson = textResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
-                const jsonResult = JSON.parse(cleanedJson);
+                // Clean markdown code blocks and extract valid JSON substring safely
+                let rawText = textResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    rawText = jsonMatch[0];
+                }
+
+                const jsonResult = JSON.parse(rawText);
 
                 state.aiResults = jsonResult;
 
@@ -1553,6 +1623,22 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
                 }
             });
 
+            // Model Selection Change Handler
+            if (elements.selectGeminiModel) {
+                elements.selectGeminiModel.addEventListener('change', (e) => {
+                    state.selectedGeminiModel = e.target.value;
+                    localStorage.setItem('yt_automator_gemini_model', e.target.value);
+                });
+            }
+
+            // Fetch Live Models List Button
+            if (elements.btnFetchModels) {
+                elements.btnFetchModels.addEventListener('click', () => {
+                    const key = elements.inputGeminiKey.value.trim() || state.geminiApiKey;
+                    fetchAvailableGeminiModels(key);
+                });
+            }
+
             // Channel Selector Change Handler (Step 3 & Step 4)
             if (elements.selectActiveChannel) {
                 elements.selectActiveChannel.addEventListener('change', (e) => {
@@ -1637,6 +1723,7 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
             if (elements.btnSaveKeys) {
                 elements.btnSaveKeys.addEventListener('click', () => {
                     const gKey = elements.inputGeminiKey.value.trim();
+                    const gModel = elements.selectGeminiModel ? elements.selectGeminiModel.value : 'gemini-2.5-flash';
                     const oId = elements.inputOAuthClientId.value.trim();
                     const defPriv = elements.defaultPrivacySelect.value;
                     const defCat = elements.defaultCategorySelect.value;
@@ -1646,6 +1733,10 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
                         state.geminiApiKey = gKey;
                         localStorage.setItem('yt_automator_gemini_key', gKey);
                         updateStatusBadge(elements.geminiStatus, true, 'Gemini AI: Ready');
+                    }
+                    if (gModel) {
+                        state.selectedGeminiModel = gModel;
+                        localStorage.setItem('yt_automator_gemini_model', gModel);
                     }
                     if (oId) {
                         state.oauthClientId = oId;
