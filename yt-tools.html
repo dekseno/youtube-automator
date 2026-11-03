@@ -1166,18 +1166,7 @@
                 state.videoMeta.duration = elements.videoPreview.duration;
                 state.videoMeta.width = elements.videoPreview.videoWidth;
                 state.videoMeta.height = elements.videoPreview.videoHeight;
-
-                elements.metaDuration.textContent = formatSeconds(state.videoMeta.duration);
-                elements.metaResolution.textContent = `${state.videoMeta.width} x ${state.videoMeta.height}`;
-
-                elements.videoInfoCard.classList.remove('hidden');
-
-                // Extract 5 snapshot thumbnails from timestamps
-                extractMultiThumbnails();
-            };
-        }
-
-        // Extract 5 Multi-Frame Thumbnails
+        // Extract 5 Multi-Frame Thumbnails (Early Frames Focus)
         function extractMultiThumbnails() {
             const video = elements.videoPreview;
             const canvas = elements.frameCanvas;
@@ -1188,22 +1177,29 @@
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 360;
 
-            const timestamps = [
-                video.duration * 0.10,
-                video.duration * 0.25,
-                video.duration * 0.50,
-                video.duration * 0.75,
-                video.duration * 0.90
+            const dur = video.duration;
+            
+            // Prioritaskan frame awal (0.5s, 1.5s, 3s, 5s, 8s) yang umumnya berisi teks judul / overlay
+            const rawTimestamps = [
+                Math.min(0.5, dur * 0.05),
+                Math.min(1.5, dur * 0.12),
+                Math.min(3.0, dur * 0.25),
+                Math.min(5.0, dur * 0.40),
+                Math.min(8.0, dur * 0.60)
             ];
+            
+            // Dapatkan maksimal 5 timestamp unik
+            const timestamps = Array.from(new Set(rawTimestamps)).filter(t => t <= dur).slice(0, 5);
 
             state.thumbnails = [];
             elements.thumbnailGallery.innerHTML = '';
             const originalTime = video.currentTime;
 
-            let index = 0;
+            let currentIndex = 0;
 
-            function captureNext() {
-                if (index >= timestamps.length) {
+            function seekNext() {
+                if (currentIndex >= timestamps.length) {
+                    video.onseeked = null; // Clean up listener!
                     video.currentTime = originalTime;
                     if (state.thumbnails.length > 0) {
                         selectThumbnail(0);
@@ -1211,26 +1207,30 @@
                     return;
                 }
 
-                video.currentTime = timestamps[index];
+                // Hapus event listener sebelumnya agar tidak berulang/berkembang biak
                 video.onseeked = () => {
+                    video.onseeked = null; // Unbind setelah dipanggil sekali per frame
+                    
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const base64 = canvas.toDataURL('image/jpeg', 0.85);
                     state.thumbnails.push(base64);
 
-                    const thumbIndex = index;
+                    const thumbIndex = state.thumbnails.length - 1;
                     const thumbDiv = document.createElement('div');
-                    thumbDiv.className = `aspect-video rounded-lg overflow-hidden border-2 cursor-pointer transition ${index === 0 ? 'border-brand-500 ring-2 ring-brand-500/50' : 'border-slate-800 hover:border-slate-600'}`;
+                    thumbDiv.className = `aspect-video rounded-lg overflow-hidden border-2 cursor-pointer transition ${thumbIndex === 0 ? 'border-brand-500 ring-2 ring-brand-500/50' : 'border-slate-800 hover:border-slate-600'}`;
                     thumbDiv.innerHTML = `<img src="${base64}" class="w-full h-full object-cover">`;
                     thumbDiv.onclick = () => selectThumbnail(thumbIndex);
 
                     elements.thumbnailGallery.appendChild(thumbDiv);
 
-                    index++;
-                    captureNext();
+                    currentIndex++;
+                    seekNext();
                 };
+
+                video.currentTime = timestamps[currentIndex];
             }
 
-            captureNext();
+            seekNext();
         }
 
         function selectThumbnail(index) {
