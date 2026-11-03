@@ -379,15 +379,28 @@
         <!-- STEP 3 PANEL -->
         <div id="panel-step-3" class="hidden space-y-6">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl mx-auto space-y-6">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                     <div>
                         <h3 class="font-bold text-slate-200 text-base">Unggah & Penjadwalan YouTube API</h3>
                         <p class="text-xs text-slate-400">Konfigurasi tanggal tayang publikasi serta visibilitas video Anda.</p>
                     </div>
-                    <button id="btn-connect-google" class="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 font-semibold rounded-xl text-xs flex items-center gap-2 transition shadow">
-                        <i class="fa-brands fa-google text-red-500"></i>
-                        <span>Login Google OAuth</span>
-                    </button>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button id="btn-connect-google" class="px-3.5 py-2 bg-white text-slate-900 hover:bg-slate-100 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition shadow shrink-0">
+                            <i class="fa-brands fa-google text-red-500"></i>
+                            <span>+ Tambah Channel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Channel Selector Dropdown for Multi-Channel Upload -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <label class="block text-xs font-semibold text-brand-400 flex items-center justify-between">
+                        <span><i class="fa-solid fa-tv mr-1"></i> Pilih Channel YouTube Tujuan Upload</span>
+                        <span id="channel-count-badge" class="text-[10px] text-slate-500">0 Channel Terhubung</span>
+                    </label>
+                    <select id="select-active-channel" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="">-- Belum ada channel (Klik Login Google OAuth) --</option>
+                    </select>
                 </div>
 
                 <!-- OAuth Connection Status Details -->
@@ -397,7 +410,7 @@
                     </div>
                     <div class="flex-1 text-xs">
                         <span class="block font-semibold text-slate-200">Status Autentikasi YouTube</span>
-                        <p id="oauth-user-status-text" class="text-slate-400 text-[11px]">Belum terhubung. Klik tombol 'Login Google OAuth' untuk memberi izin upload video.</p>
+                        <p id="oauth-user-status-text" class="text-slate-400 text-[11px]">Belum terhubung. Klik 'Tambah Channel' untuk memberi izin upload video.</p>
                     </div>
                 </div>
 
@@ -489,24 +502,31 @@
             <!-- Channel Header & Multi-Channel Switcher -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
                 <div class="flex items-center gap-3">
-                    <div id="channel-avatar-container" class="w-12 h-12 rounded-full bg-slate-800 border-2 border-brand-500 flex items-center justify-center text-slate-400 text-xl font-bold overflow-hidden shadow">
+                    <div id="channel-avatar-container" class="w-12 h-12 rounded-full bg-slate-800 border-2 border-brand-500 flex items-center justify-center text-slate-400 text-xl font-bold overflow-hidden shadow shrink-0">
                         <i class="fa-solid fa-tv"></i>
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="font-bold text-slate-100 text-base" id="history-channel-name">Channel Terhubung: Belum Login</h3>
-                            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-semibold">Multi-Channel Ready</span>
+                            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-semibold">Multi-Channel Active</span>
                         </div>
-                        <p class="text-xs text-slate-400" id="history-channel-sub">Login OAuth untuk mendeteksi channel YouTube dan menyimpan riwayat upload.</p>
+                        <p class="text-xs text-slate-400" id="history-channel-sub">Hubungkan channel YouTube untuk melihat koleksi & daftar video terdaftar.</p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <button id="btn-switch-account" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition">
-                        <i class="fa-brands fa-google text-red-500"></i>
-                        <span>Ganti Akun / Channel YouTube</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <select id="select-history-channel" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500">
+                        <option value="">-- Pilih Channel --</option>
+                    </select>
+                    <button id="btn-fetch-live-videos" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-brand-400 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Sync Live YouTube</span>
                     </button>
-                    <button id="btn-clear-history" class="px-3 py-2 bg-slate-800/80 hover:bg-red-950 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-800 rounded-xl text-xs transition">
+                    <button id="btn-switch-account" class="px-3.5 py-2 bg-white text-slate-900 hover:bg-slate-100 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i class="fa-brands fa-google text-red-500"></i>
+                        <span>+ Tambah Akun Baru</span>
+                    </button>
+                    <button id="btn-clear-history" class="px-3 py-2 bg-slate-800/80 hover:bg-red-950 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-800 rounded-xl text-xs transition" title="Hapus Riwayat Lokal">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
@@ -620,12 +640,14 @@
             defaultKids: 'false',
             settingsCollapsed: false,
             googleAccessToken: null,
-            currentChannel: null, // Connected Channel Info
+            connectedChannels: [], // List of { id, title, avatar, token, expiresAt, uploadsPlaylistId }
+            activeChannelId: null,
+            liveChannelVideos: [], // Fetched real videos from YouTube API
             videoHistory: [],     // LocalStorage saved video/shorts history
             selectedFile: null,
             renamedFile: null,
             snapshotBase64: null,
-            thumbnails: [], // Multi-frame thumbnails
+            thumbnails: [],
             selectedThumbnailIndex: 0,
             videoMeta: {
                 duration: 0,
@@ -705,6 +727,8 @@
 
             // Step 3
             btnConnectGoogle: document.getElementById('btn-connect-google'),
+            selectActiveChannel: document.getElementById('select-active-channel'),
+            channelCountBadge: document.getElementById('channel-count-badge'),
             googleAuthBadge: document.getElementById('google-auth-badge'),
             ytUserName: document.getElementById('yt-user-name'),
             oauthUserStatusText: document.getElementById('oauth-user-status-text'),
@@ -727,6 +751,8 @@
             channelAvatarContainer: document.getElementById('channel-avatar-container'),
             historyChannelName: document.getElementById('history-channel-name'),
             historyChannelSub: document.getElementById('history-channel-sub'),
+            selectHistoryChannel: document.getElementById('select-history-channel'),
+            btnFetchLiveVideos: document.getElementById('btn-fetch-live-videos'),
             btnSwitchAccount: document.getElementById('btn-switch-account'),
             btnClearHistory: document.getElementById('btn-clear-history'),
             statTotalCount: document.getElementById('stat-total-count'),
@@ -740,6 +766,7 @@
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
             loadSavedKeys();
+            loadConnectedChannels();
             loadVideoHistory();
             setupEventListeners();
         });
@@ -766,21 +793,122 @@
             if (savedPrivacy) {
                 state.defaultPrivacy = savedPrivacy;
                 elements.defaultPrivacySelect.value = savedPrivacy;
-                elements.uploadPrivacy.value = savedPrivacy;
+                if (elements.uploadPrivacy) elements.uploadPrivacy.value = savedPrivacy;
             }
             if (savedCategory) {
                 state.defaultCategory = savedCategory;
                 elements.defaultCategorySelect.value = savedCategory;
-                elements.uploadCategoryId.value = savedCategory;
+                if (elements.uploadCategoryId) elements.uploadCategoryId.value = savedCategory;
             }
             if (savedKids !== null) {
                 state.defaultKids = savedKids;
                 elements.defaultKidsSelect.value = savedKids;
-                elements.uploadMadeForKids.value = savedKids;
+                if (elements.uploadMadeForKids) elements.uploadMadeForKids.value = savedKids;
             }
 
             if (savedCollapsed) {
                 toggleSettingsPanel(true);
+            }
+        }
+
+        // Multi-Channel & Session Persistence
+        function loadConnectedChannels() {
+            try {
+                const saved = localStorage.getItem('yt_automator_connected_channels');
+                state.connectedChannels = saved ? JSON.parse(saved) : [];
+            } catch (e) {
+                state.connectedChannels = [];
+            }
+
+            const activeId = localStorage.getItem('yt_automator_active_channel_id');
+            if (activeId && state.connectedChannels.some(c => c.id === activeId)) {
+                state.activeChannelId = activeId;
+            } else if (state.connectedChannels.length > 0) {
+                state.activeChannelId = state.connectedChannels[0].id;
+            }
+
+            updateChannelDropdowns();
+
+            // Set current token if active channel token is still valid
+            const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+            if (activeCh) {
+                if (Date.now() < activeCh.expiresAt) {
+                    state.googleAccessToken = activeCh.token;
+                    updateOAuthStatusUI(activeCh);
+                } else {
+                    updateOAuthStatusUI(activeCh, true); // Expired token
+                }
+            }
+        }
+
+        function saveConnectedChannels() {
+            localStorage.setItem('yt_automator_connected_channels', JSON.stringify(state.connectedChannels));
+            if (state.activeChannelId) {
+                localStorage.setItem('yt_automator_active_channel_id', state.activeChannelId);
+            }
+            updateChannelDropdowns();
+        }
+
+        function updateChannelDropdowns() {
+            const count = state.connectedChannels.length;
+            if (elements.channelCountBadge) {
+                elements.channelCountBadge.textContent = `${count} Channel Terhubung`;
+            }
+
+            const activeSel = elements.selectActiveChannel;
+            const historySel = elements.selectHistoryChannel;
+
+            if (activeSel) {
+                activeSel.innerHTML = count === 0 ? '<option value="">-- Belum ada channel (Klik + Tambah Channel) --</option>' : '';
+            }
+            if (historySel) {
+                historySel.innerHTML = count === 0 ? '<option value="">-- Belum ada channel --</option>' : '';
+            }
+
+            state.connectedChannels.forEach(ch => {
+                const isExpired = Date.now() >= ch.expiresAt;
+                const optText = `${ch.title} ${isExpired ? '(Perlu Re-Auth)' : ''}`;
+
+                if (activeSel) {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = optText;
+                    if (ch.id === state.activeChannelId) opt.selected = true;
+                    activeSel.appendChild(opt);
+                }
+
+                if (historySel) {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = optText;
+                    if (ch.id === state.activeChannelId) opt.selected = true;
+                    historySel.appendChild(opt);
+                }
+            });
+        }
+
+        function updateOAuthStatusUI(channel, isExpired = false) {
+            if (!channel) return;
+
+            if (elements.googleAuthBadge) {
+                elements.googleAuthBadge.classList.remove('hidden');
+                elements.googleAuthBadge.classList.add('flex');
+            }
+
+            if (isExpired) {
+                if (elements.ytUserName) elements.ytUserName.textContent = `${channel.title} (Sesi Berakhir)`;
+                if (elements.oauthUserStatusText) elements.oauthUserStatusText.textContent = `Sesi login untuk '${channel.title}' telah berakhir. Klik '+ Tambah Channel' untuk menghubungkan kembali.`;
+                updateStatusBadge(elements.oauthStatus, false, 'OAuth: Expired');
+            } else {
+                if (elements.ytUserName) elements.ytUserName.textContent = `${channel.title} (Aktif)`;
+                if (elements.oauthUserStatusText) elements.oauthUserStatusText.textContent = `Terhubung ke '${channel.title}'. Siap untuk unggah video.`;
+                updateStatusBadge(elements.oauthStatus, true, 'OAuth: Connected');
+            }
+
+            if (elements.historyChannelName) elements.historyChannelName.textContent = channel.title;
+            if (elements.historyChannelSub) elements.historyChannelSub.textContent = `Channel ID: ${channel.id}`;
+            if (elements.channelAvatarContainer && channel.avatar) {
+                elements.channelAvatarContainer.innerHTML = `<img src="${channel.avatar}" class="w-full h-full object-cover">`;
             }
         }
 
@@ -835,11 +963,84 @@
             });
 
             if (stepNum === 4) {
+                const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+                if (activeCh && activeCh.token && Date.now() < activeCh.expiresAt && state.liveChannelVideos.length === 0) {
+                    fetchLiveChannelVideos(activeCh);
+                } else {
+                    renderVideoHistory();
+                }
+            }
+        }
+
+        // Fetch Live YouTube Channel Videos from API
+        async function fetchLiveChannelVideos(channel) {
+            if (!channel || !channel.token) {
+                renderVideoHistory();
+                return;
+            }
+
+            if (elements.btnFetchLiveVideos) {
+                elements.btnFetchLiveVideos.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Loading...';
+            }
+
+            try {
+                let playlistId = channel.uploadsPlaylistId;
+
+                // If upload playlist ID is not saved, fetch channel details first
+                if (!playlistId) {
+                    const channelRes = await fetch('https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true', {
+                        headers: { 'Authorization': `Bearer ${channel.token}` }
+                    });
+                    if (channelRes.ok) {
+                        const channelData = await channelRes.json();
+                        playlistId = channelData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+                        channel.uploadsPlaylistId = playlistId;
+                        saveConnectedChannels();
+                    }
+                }
+
+                if (!playlistId) throw new Error('Playlist Upload Channel tidak ditemukan.');
+
+                // Fetch videos from Uploads playlist
+                const itemsRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,status&playlistId=${playlistId}&maxResults=30`, {
+                    headers: { 'Authorization': `Bearer ${channel.token}` }
+                });
+
+                if (!itemsRes.ok) {
+                    throw new Error(`HTTP ${itemsRes.status} saat mengambil video YouTube.`);
+                }
+
+                const itemsData = await itemsRes.json();
+                state.liveChannelVideos = (itemsData.items || []).map(item => {
+                    const snippet = item.snippet;
+                    const status = item.status || {};
+                    const title = snippet.title || 'Untitled Video';
+                    return {
+                        id: snippet.resourceId?.videoId,
+                        title: title,
+                        filename: 'YouTube Upload',
+                        isShort: title.toLowerCase().includes('#shorts'),
+                        privacy: status.privacyStatus || 'public',
+                        publishAt: status.publishAt || null,
+                        uploadDate: snippet.publishedAt,
+                        channelTitle: channel.title,
+                        thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url
+                    };
+                });
+
+                showToast(`Berhasil sinkronisasi ${state.liveChannelVideos.length} video live dari ${channel.title}!`, 'success');
+            } catch (err) {
+                console.warn('Fetch live videos error:', err);
+                showToast(`Gagal sync YouTube: ${err.message}`, 'error');
+            } finally {
+                if (elements.btnFetchLiveVideos) {
+                    elements.btnFetchLiveVideos.innerHTML = '<i class="fa-solid fa-rotate"></i><span>Sync Live YouTube</span>';
+                }
                 renderVideoHistory();
             }
         }
 
-        // Load & Render Video History
+        // Load & Render Combined Video History (Local + Live YouTube API)
         function loadVideoHistory() {
             try {
                 const saved = localStorage.getItem('yt_automator_video_history');
@@ -857,7 +1058,20 @@
         }
 
         function renderVideoHistory() {
-            const history = state.videoHistory || [];
+            // Combine local upload history and live API fetched videos (deduplicated by video ID)
+            const combinedMap = new Map();
+            
+            state.liveChannelVideos.forEach(v => {
+                if (v.id) combinedMap.set(v.id, v);
+            });
+
+            state.videoHistory.forEach(v => {
+                if (!state.activeChannelId || v.channelId === state.activeChannelId || !v.channelId) {
+                    combinedMap.set(v.id || v.title, v);
+                }
+            });
+
+            const history = Array.from(combinedMap.values());
             
             // Compute Counters
             const total = history.length;
@@ -865,20 +1079,22 @@
             const videoCount = total - shortsCount;
             const scheduledCount = history.filter(h => h.privacy === 'scheduled').length;
 
-            elements.statTotalCount.textContent = total;
-            elements.statShortsCount.textContent = shortsCount;
-            elements.statVideosCount.textContent = videoCount;
-            elements.statScheduledCount.textContent = scheduledCount;
+            if (elements.statTotalCount) elements.statTotalCount.textContent = total;
+            if (elements.statShortsCount) elements.statShortsCount.textContent = shortsCount;
+            if (elements.statVideosCount) elements.statVideosCount.textContent = videoCount;
+            if (elements.statScheduledCount) elements.statScheduledCount.textContent = scheduledCount;
 
             if (history.length === 0) {
-                elements.historyEmptyState.classList.remove('hidden');
-                elements.historyHorizontalContainer.classList.add('hidden');
+                if (elements.historyEmptyState) elements.historyEmptyState.classList.remove('hidden');
+                if (elements.historyHorizontalContainer) elements.historyHorizontalContainer.classList.add('hidden');
                 return;
             }
 
-            elements.historyEmptyState.classList.add('hidden');
-            elements.historyHorizontalContainer.classList.remove('hidden');
-            elements.historyHorizontalContainer.innerHTML = '';
+            if (elements.historyEmptyState) elements.historyEmptyState.classList.add('hidden');
+            if (elements.historyHorizontalContainer) {
+                elements.historyHorizontalContainer.classList.remove('hidden');
+                elements.historyHorizontalContainer.innerHTML = '';
+            }
 
             history.forEach((item, index) => {
                 const card = document.createElement('div');
@@ -908,17 +1124,22 @@
                         <p class="text-[10px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-calendar-day"></i> ${item.privacy === 'scheduled' ? 'Jadwal Tayang:' : 'Diunggah:'} ${dateDisplay}</p>
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t border-slate-900 text-[10px]">
-                        <span class="text-slate-500 truncate max-w-[150px]"><i class="fa-solid fa-file-video mr-1"></i>${item.filename}</span>
-                        <button onclick="deleteHistoryItem(${index})" class="text-slate-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <a href="https://youtu.be/${item.id}" target="_blank" class="text-brand-400 hover:underline truncate max-w-[150px] flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Tonton Video
+                        </a>
+                        <button onclick="deleteHistoryItem('${item.id || index}')" class="text-slate-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 `;
 
-                elements.historyHorizontalContainer.appendChild(card);
+                if (elements.historyHorizontalContainer) {
+                    elements.historyHorizontalContainer.appendChild(card);
+                }
             });
         }
 
-        function deleteHistoryItem(index) {
-            state.videoHistory.splice(index, 1);
+        function deleteHistoryItem(idOrIndex) {
+            state.videoHistory = state.videoHistory.filter((item, idx) => item.id !== idOrIndex && idx.toString() !== idOrIndex.toString());
+            state.liveChannelVideos = state.liveChannelVideos.filter(item => item.id !== idOrIndex);
             localStorage.setItem('yt_automator_video_history', JSON.stringify(state.videoHistory));
             renderVideoHistory();
             showToast('Item riwayat dihapus.', 'info');
@@ -1270,29 +1491,42 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
         }
 
         // Fetch Connected Channel Profile via YouTube Data API
-        async function fetchChannelProfile() {
-            if (!state.googleAccessToken) return;
+        async function fetchChannelProfile(token, expiresInSec = 3600) {
+            if (!token) return;
 
             try {
-                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
-                    headers: { 'Authorization': `Bearer ${state.googleAccessToken}` }
+                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (res.ok) {
                     const data = await res.json();
                     if (data.items && data.items.length > 0) {
                         const channel = data.items[0];
-                        state.currentChannel = {
+                        const channelInfo = {
                             id: channel.id,
                             title: channel.snippet.title,
-                            avatar: channel.snippet.thumbnails?.default?.url || ''
+                            avatar: channel.snippet.thumbnails?.default?.url || '',
+                            token: token,
+                            expiresAt: Date.now() + (expiresInSec * 1000),
+                            uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads
                         };
 
-                        elements.historyChannelName.textContent = state.currentChannel.title;
-                        elements.historyChannelSub.textContent = `Channel ID: ${state.currentChannel.id}`;
-                        if (state.currentChannel.avatar) {
-                            elements.channelAvatarContainer.innerHTML = `<img src="${state.currentChannel.avatar}" class="w-full h-full object-cover">`;
+                        // Add or Update in state.connectedChannels
+                        const existingIdx = state.connectedChannels.findIndex(c => c.id === channel.id);
+                        if (existingIdx >= 0) {
+                            state.connectedChannels[existingIdx] = channelInfo;
+                        } else {
+                            state.connectedChannels.push(channelInfo);
                         }
+
+                        state.activeChannelId = channel.id;
+                        state.googleAccessToken = token;
+                        saveConnectedChannels();
+                        updateOAuthStatusUI(channelInfo);
+
+                        // Sync live videos
+                        fetchLiveChannelVideos(channelInfo);
                     }
                 }
             } catch (e) {
@@ -1309,7 +1543,63 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
                 }
             });
 
-            // Switch Account & Clear History
+            // Channel Selector Change Handler (Step 3 & Step 4)
+            if (elements.selectActiveChannel) {
+                elements.selectActiveChannel.addEventListener('change', (e) => {
+                    const selectedId = e.target.value;
+                    state.activeChannelId = selectedId;
+                    const ch = state.connectedChannels.find(c => c.id === selectedId);
+                    if (ch) {
+                        state.googleAccessToken = ch.token;
+                        if (Date.now() < ch.expiresAt) {
+                            updateOAuthStatusUI(ch);
+                        } else {
+                            updateOAuthStatusUI(ch, true);
+                        }
+                    }
+                    if (elements.selectHistoryChannel) elements.selectHistoryChannel.value = selectedId;
+                    saveConnectedChannels();
+                });
+            }
+
+            if (elements.selectHistoryChannel) {
+                elements.selectHistoryChannel.addEventListener('change', (e) => {
+                    const selectedId = e.target.value;
+                    state.activeChannelId = selectedId;
+                    const ch = state.connectedChannels.find(c => c.id === selectedId);
+                    if (ch) {
+                        state.googleAccessToken = ch.token;
+                        if (Date.now() < ch.expiresAt) {
+                            updateOAuthStatusUI(ch);
+                            fetchLiveChannelVideos(ch);
+                        } else {
+                            updateOAuthStatusUI(ch, true);
+                            renderVideoHistory();
+                        }
+                    }
+                    if (elements.selectActiveChannel) elements.selectActiveChannel.value = selectedId;
+                    saveConnectedChannels();
+                });
+            }
+
+            // Sync Live YouTube Videos Button
+            if (elements.btnFetchLiveVideos) {
+                elements.btnFetchLiveVideos.addEventListener('click', () => {
+                    const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+                    if (!activeCh) {
+                        showToast('Pilih atau hubungkan channel YouTube terlebih dahulu.', 'error');
+                        return;
+                    }
+                    if (Date.now() >= activeCh.expiresAt) {
+                        showToast('Sesi OAuth untuk channel ini telah berakhir. Silakan login ulang.', 'error');
+                        initGoogleOAuth();
+                        return;
+                    }
+                    fetchLiveChannelVideos(activeCh);
+                });
+            }
+
+            // Switch Account / Add New Account
             if (elements.btnSwitchAccount) {
                 elements.btnSwitchAccount.addEventListener('click', () => {
                     initGoogleOAuth();
@@ -1318,8 +1608,9 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
 
             if (elements.btnClearHistory) {
                 elements.btnClearHistory.addEventListener('click', () => {
-                    if (confirm('Apakah Anda yakin ingin menghapus seluruh riwayat koleksi?')) {
+                    if (confirm('Apakah Anda yakin ingin menghapus seluruh riwayat koleksi lokal?')) {
                         state.videoHistory = [];
+                        state.liveChannelVideos = [];
                         localStorage.removeItem('yt_automator_video_history');
                         renderVideoHistory();
                         showToast('Riwayat koleksi dibersihkan!', 'info');
@@ -1470,6 +1761,7 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
         function initGoogleOAuth() {
             if (!state.oauthClientId) {
                 showToast('Harap masukkan Google Client ID di panel atas!', 'error');
+                toggleSettingsPanel(false);
                 return;
             }
 
@@ -1481,21 +1773,16 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
             const tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: state.oauthClientId,
                 scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+                prompt: 'select_account', // Always allow picking or adding a new account
                 callback: async (response) => {
                     if (response.error) {
                         showToast(`OAuth Error: ${response.error}`, 'error');
                         return;
                     }
-                    state.googleAccessToken = response.access_token;
-                    
-                    elements.googleAuthBadge.classList.remove('hidden');
-                    elements.googleAuthBadge.classList.add('flex');
-                    elements.ytUserName.textContent = 'Terhubung (Ready to Upload)';
-                    if (elements.oauthUserStatusText) {
-                        elements.oauthUserStatusText.textContent = 'Berhasil terhubung. Anda dapat langsung mengunggah video ke channel YouTube.';
-                    }
-                    
-                    await fetchChannelProfile();
+                    const token = response.access_token;
+                    const expiresInSec = response.expires_in || 3600;
+
+                    await fetchChannelProfile(token, expiresInSec);
                     showToast('Otentikasi YouTube Berhasil!', 'success');
                 },
             });
@@ -1505,8 +1792,10 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
 
         // YouTube Data API v3 Resumable Upload Engine
         async function startYouTubeUpload() {
-            if (!state.googleAccessToken) {
-                showToast('Silakan login dengan Google OAuth terlebih dahulu!', 'error');
+            const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+            
+            if (!activeCh || !state.googleAccessToken || Date.now() >= activeCh.expiresAt) {
+                showToast('Silakan hubungkan / login ke channel YouTube terlebih dahulu!', 'error');
                 initGoogleOAuth();
                 return;
             }
@@ -1555,7 +1844,7 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
             elements.btnStartUpload.classList.add('opacity-50');
 
             try {
-                elements.uploadStatusText.textContent = 'Menginisialisasi sesi upload YouTube...';
+                elements.uploadStatusText.textContent = `Menginisialisasi upload ke channel '${activeCh.title}'...`;
                 
                 const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
                     method: 'POST',
@@ -1608,9 +1897,13 @@ Balas HANYA dalam format JSON valid tanpa format markdown tambahan:
                             privacy: privacyStatus,
                             publishAt: privacyStatus === 'scheduled' ? elements.uploadPublishAt.value : null,
                             uploadDate: new Date().toISOString(),
-                            channelTitle: state.currentChannel?.title || 'YouTube Channel',
+                            channelId: activeCh.id,
+                            channelTitle: activeCh.title,
                             thumbnail: state.snapshotBase64
                         });
+
+                        // Fetch updated channel videos
+                        fetchLiveChannelVideos(activeCh);
 
                     } else {
                         showToast(`Gagal Mengunggah Video: ${xhr.responseText}`, 'error');
