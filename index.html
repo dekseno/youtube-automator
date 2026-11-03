@@ -66,7 +66,7 @@
                     <i class="fa-solid font-bold fa-play text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pre</h1>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pros</h1>
                     <span class="text-xs text-slate-400">AI Inspector & YouTube Scheduler</span>
                 </div>
             </div>
@@ -832,22 +832,22 @@
         // STEP 2: Gemini AI Metadata Generation (Updated with Timeout & Valid Model Names)
         // STEP 2: Gemini AI Metadata Generation (Updated with Working Models & Resilient Fallback)
         async function fetchGeminiWithRetryAndFallback(payload, apiKey) {
-            // Gunakan daftar model Flash resmi yang 100% mendukung Free Tier gratisan
-            const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
-            const maxRetriesPerModel = 2;
+            // Menggunakan gemini-3.8-flash sebagai model utama sesuai standar API Google terbaru
+            const models = ['gemini-3.8-flash', 'gemini-3.8-pro'];
+            const maxRetriesPerModel = 3;
             let lastError = null;
 
             for (const model of models) {
-                let delay = 1500;
+                let delay = 2000;
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
                 for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
                     try {
-                        elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menganalisis (${model})...</span>`;
+                        elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menganalisis (${model} - Coba ${attempt}/${maxRetriesPerModel})...</span>`;
 
-                        // Controller timeout 15 detik agar tidak menggantung
+                        // Controller timeout 20 detik
                         const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 15000);
+                        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
                         const response = await fetch(apiUrl, {
                             method: 'POST',
@@ -865,24 +865,29 @@
                         const errJson = await response.json().catch(() => ({}));
                         lastError = errJson.error?.message || `HTTP ${response.status}`;
 
-                        // Jika terkena batas kuota (Quota Exceeded), langsung lewati ke model berikutnya tanpa retry
-                        if (response.status === 429 && lastError.toLowerCase().includes('quota')) {
-                            console.warn(`Model ${model} terkena limit kuota. Meminta model lain...`);
+                        // Jika model tidak ditemukan / deprecated (400 atau 404), lewati ke model berikutnya
+                        if (response.status === 400 || response.status === 404) {
+                            console.warn(`Model ${model} tidak tersedia: ${lastError}`);
                             break;
                         }
 
-                        // Jika server sibuk (503/500/429 biasa), coba ulang 1-2 kali
+                        // Jika terkena batas kuota habis
+                        if (response.status === 429 && lastError.toLowerCase().includes('quota')) {
+                            console.warn(`Model ${model} terkena limit kuota.`);
+                            break;
+                        }
+
+                        // Jika server sibuk / high demand (503 / 429), tunggu lalu coba lagi (exponential backoff)
                         if ((response.status === 429 || response.status === 503 || response.status === 500) && attempt < maxRetriesPerModel) {
-                            elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Server padat. Coba lagi (${model})...</span>`;
+                            elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Server padat (${model}). Menunggu ${delay/1000}s...</span>`;
                             await new Promise(res => setTimeout(res, delay));
                             delay *= 2;
                             continue;
                         }
 
-                        // Jika model tidak ditemukan (404/400), keluar dari inner loop dan coba model berikutnya
                         break;
                     } catch (err) {
-                        lastError = err.name === 'AbortError' ? 'Koneksi Timeout (15s)' : err.message;
+                        lastError = err.name === 'AbortError' ? 'Koneksi Timeout (20s)' : err.message;
                         if (attempt < maxRetriesPerModel) {
                             await new Promise(res => setTimeout(res, delay));
                             delay *= 2;
@@ -893,9 +898,9 @@
             }
 
             if (lastError && lastError.toLowerCase().includes('quota')) {
-                throw new Error('Kuota API Gemini gratis Anda untuk Key ini sudah habis (Quota Exceeded). Silakan tunggu atau gunakan Gemini API Key baru/lain dari Google AI Studio.');
+                throw new Error('Kuota API Gemini gratis Anda untuk Key ini sudah habis (Quota Exceeded). Silakan buat Gemini API Key baru di Google AI Studio.');
             }
-            throw new Error(lastError || 'Gagal terhubung ke Gemini AI. Periksa Gemini API Key Anda.');
+            throw new Error(lastError || 'Gagal terhubung ke Gemini AI.');
         }
 
         async function generateAiMetadata() {
