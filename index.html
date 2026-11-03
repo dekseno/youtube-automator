@@ -66,7 +66,7 @@
                     <i class="fa-solid font-bold fa-play text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pru</h1>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pro</h1>
                     <span class="text-xs text-slate-400">AI Inspector & YouTube Scheduler</span>
                 </div>
             </div>
@@ -177,6 +177,194 @@
                 </div>
             </div>
         </div>
+
+        <!-- Workflow Tabs Header -->
+        <div class="grid grid-cols-3 gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-medium text-center">
+            <div id="step-tab-1" class="step-tab active py-2.5 px-3 rounded-xl border border-brand-500/50 bg-brand-500/10 text-brand-400 flex items-center justify-center gap-2 transition">
+                <span class="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                <span>Pilih & Inspeksi Video</span>
+            </div>
+            <div id="step-tab-2" class="step-tab py-2.5 px-3 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 flex items-center justify-center gap-2 transition">
+                <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-bold">2</span>
+                <span>AI Metadata & Rename</span>
+            </div>
+            <div id="step-tab-3" class="step-tab py-2.5 px-3 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 flex items-center justify-center gap-2 transition">
+                <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-bold">3</span>
+                <span>Jadwalkan & Upload</span>
+            </div>
+        </div>
+
+        <!-- STEP 1 PANEL -->
+        <div id="panel-step-1" class="space-y-6">
+            <div id="drop-zone" class="border-2 border-dashed border-slate-800 hover:border-brand-500/50 rounded-2xl p-8 sm:p-12 text-center transition cursor-pointer bg-slate-900/40 hover:bg-slate-900/80">
+                <input type="file" id="video-file-input" accept="video/*" class="hidden">
+                <div class="w-16 h-16 rounded-full bg-slate-800 text-brand-500 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h3 class="font-bold text-slate-200 text-base mb-1">Browse atau Drag & Drop Berkas Video</h3>
+                <p class="text-xs text-slate-400 mb-4 max-w-md mx-auto">Mendukung format MP4, WebM, atau MKV. Video akan dianalisis secara lokal di browser Anda.</p>
+                <button onclick="document.getElementById('video-file-input').click()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl text-xs shadow-lg shadow-brand-600/20 transition">
+                    Pilih Berkas Video
+                </button>
+            </div>
+
+            <!-- Video File Loaded Info Card (Hidden by default) -->
+            <div id="video-info-card" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div class="flex flex-col md:flex-row gap-6 items-center">
+                    <div class="w-full md:w-64 aspect-video bg-black rounded-xl overflow-hidden relative border border-slate-800">
+                        <video id="video-preview" controls class="w-full h-full object-contain"></video>
+                        <canvas id="frame-canvas" class="hidden"></canvas>
+                    </div>
+                    <div class="flex-1 space-y-2 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-200 text-sm truncate max-w-xs sm:max-w-md" id="video-file-name">filename.mp4</span>
+                            <span class="px-2 py-0.5 rounded bg-brand-500/20 text-brand-400 font-medium" id="file-size-badge">0 MB</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 pt-2">
+                            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                                <span class="block text-slate-500 text-[10px]">Durasi</span>
+                                <span class="font-medium text-slate-200" id="meta-duration">00:00</span>
+                            </div>
+                            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                                <span class="block text-slate-500 text-[10px]">Resolusi</span>
+                                <span class="font-medium text-slate-200" id="meta-resolution">1920 x 1080</span>
+                            </div>
+                            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                                <span class="block text-slate-500 text-[10px]">Format</span>
+                                <span class="font-medium text-slate-200" id="meta-type">video/mp4</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2 border-t border-slate-800">
+                    <button id="btn-to-step2" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <span>Lanjut ke Inspeksi AI & Metadata</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2 PANEL -->
+        <div id="panel-step-2" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Frame Snapshot & AI Trigger Controls -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-camera text-brand-500"></i> Snapshot Frame Video
+                    </h3>
+                    <div class="aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 relative">
+                        <img id="snapshot-img" class="w-full h-full object-contain" alt="Frame Snapshot">
+                    </div>
+                    <button id="btn-capture-frame" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium border border-slate-700 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>Ambil Ulang Frame (Saat Ini)</span>
+                    </button>
+
+                    <div class="pt-2 space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Kategori Konten</label>
+                            <select id="ai-category-select" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                <option value="Gaming / Entertainment">Game / Hiburan</option>
+                                <option value="Tutorial / Education">Tutorial / Pendidikan</option>
+                                <option value="Vlog / Daily">Vlog / Catatan Harian</option>
+                                <option value="Product Review / Tech">Review Produk / Teknologi</option>
+                                <option value="Music / Performance">Musik / Pertunjukan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Catatan Tambahan Konteks (Opsional)</label>
+                            <textarea id="ai-context-hint" rows="2" placeholder="Contoh: Video ini membahas tutorial membuat kue kering tanpa oven..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                        </div>
+                        <button id="btn-generate-ai" class="w-full py-2.5 bg-gradient-to-r from-brand-600 to-red-600 hover:from-brand-500 hover:to-red-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-brain"></i>
+                            <span>Inspeksi & Generate Metadata</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Generated Metadata & Auto-Rename Outputs -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-sparkles text-brand-500"></i> Hasil Rekomendasi AI & Auto-Rename
+                        </h3>
+                        <button id="btn-copy-all" class="text-xs text-brand-400 hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-copy"></i> Copy Semua
+                        </button>
+                    </div>
+
+                    <!-- Auto-Rename Section -->
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                        <label class="block text-xs font-semibold text-brand-400 flex items-center justify-between">
+                            <span><i class="fa-solid fa-file-signature mr-1"></i> Rekomendasi Nama Berkas (SEO Friendly File Name)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="ai-filename-input" placeholder="nama-file-seo.mp4" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <button id="btn-download-renamed" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium flex items-center gap-1 transition">
+                                <i class="fa-solid fa-download"></i> Download Video Ter-Rename
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Title -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-medium text-slate-400">Judul Video YouTube</label>
+                            <span class="text-[10px] text-slate-500" id="title-char-count">0/100</span>
+                        </div>
+                        <input type="text" id="ai-title-input" placeholder="Judul video otomatis akan muncul di sini..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Deskripsi Lengkap + Hashtag</label>
+                        <textarea id="ai-desc-input" rows="6" placeholder="Deskripsi video otomatis..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none font-sans"></textarea>
+                    </div>
+
+                    <!-- Tags -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Tag YouTube (Dipisahkan koma)</label>
+                        <input type="text" id="ai-tags-input" placeholder="tag1, tag2, tag3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <div class="flex justify-between pt-4 border-t border-slate-800">
+                        <button id="btn-back-step1" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+                        </button>
+                        <button id="btn-to-step3" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2">
+                            <span>Lanjut ke Penjadwalan & Upload</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3 PANEL -->
+        <div id="panel-step-3" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-2xl mx-auto space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-200 text-base">Unggah & Penjadwalan YouTube API</h3>
+                        <p class="text-xs text-slate-400">Konfigurasi tanggal tayang publikasi serta visibilitas video Anda.</p>
+                    </div>
+                    <button id="btn-connect-google" class="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 font-semibold rounded-xl text-xs flex items-center gap-2 transition shadow">
+                        <i class="fa-brands fa-google text-red-500"></i>
+                        <span>Login Google OAuth</span>
+                    </button>
+                </div>
+
+                <div id="oauth-user-status-text" class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Anda belum terhubung dengan akun YouTube. Klik tombol "Login Google OAuth" di atas.
+                </div>
+
+                <!-- Final Summary Review -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-500">Judul Final:</span><span class="text-slate-200 font-medium truncate max-w-xs" id="final-summary-title">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Nama Berkas Berhasil Di-rename:</span><span class="text-brand-400 font-medium truncate max-w-xs" id="final-summary-filename">-</span></div>
+                </div>
+
                 <!-- Scheduling & Privacy Settings Form -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Visibility Option -->
@@ -190,7 +378,7 @@
                         </select>
                     </div>
 
-                    <!-- Scheduled DateTime Picker (Visible if scheduled selected) -->
+                    <!-- Scheduled DateTime Picker -->
                     <div id="schedule-datetime-container" class="opacity-50 pointer-events-none transition-all">
                         <label class="block text-xs font-medium text-slate-400 mb-1">Tanggal & Waktu Tayang (Publish At)</label>
                         <input type="datetime-local" id="upload-publish-at" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
@@ -228,6 +416,45 @@
                     </div>
                 </div>
 
+                <!-- Progress Bar Area -->
+                <div id="upload-progress-container" class="hidden space-y-2 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400" id="upload-status-text">Mengunggah berkas...</span>
+                        <span class="font-bold text-brand-400" id="upload-percentage">0%</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="upload-progress-bar" class="h-full bg-gradient-to-r from-brand-600 to-emerald-500 w-0 transition-all duration-300"></div>
+                    </div>
+                    <div class="text-[10px] text-slate-500 text-right" id="upload-mb-text">0 MB / 0 MB</div>
+                </div>
+
+                <div class="flex justify-between pt-4 border-t border-slate-800">
+                    <button id="btn-back-step2" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+                    </button>
+                    <button id="btn-start-upload" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-600/30 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Unggah Video Sekarang</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Instructions & Settings Guide (PROPER MODAL DIALOG) -->
+    <div id="modal-guide" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-book text-brand-500"></i> Panduan Memasang Gemini API & OAuth Client ID
+                </h3>
+                <button onclick="closeGuideModal()" class="text-slate-400 hover:text-white text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-300">
                 <h4 class="font-bold text-slate-100 text-sm border-b border-slate-800 pb-1">1. Cara Mendapatkan Gemini API Key Gratis</h4>
                 <ol class="list-decimal list-inside space-y-1 pl-2">
                     <li>Buka <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 underline">Google AI Studio</a>.</li>
@@ -394,6 +621,13 @@
             }
         }
 
+        function updateStatusBadge(badgeEl, isSuccess, text) {
+            badgeEl.className = isSuccess 
+                ? 'px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium'
+                : 'px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+            badgeEl.innerHTML = `<i class="fa-solid fa-circle text-[8px] mr-1"></i>${text}`;
+        }
+
         // Event Listeners Setup
         function setupEventListeners() {
             // Save Settings & Defaults Button
@@ -432,20 +666,19 @@
                 showToast('Pengaturan API Key dan Nilai Default Berhasil Disimpan!', 'success');
             });
 
-        // STEP 3: Sync Final Summary & Apply Defaults
-        function syncFinalSummary() {
-            const currentNewName = elements.aiFilenameInput.value.trim() || 'video-renamed.mp4';
-            updateRenamedFileObject(currentNewName);
-
-            elements.finalSummaryTitle.textContent = elements.aiTitleInput.value || 'Tanpa Judul';
-            elements.finalSummaryFilename.textContent = state.renamedFile.name;
-
-            // Apply saved defaults if user hasn't touched upload form
-            if (state.defaultPrivacy) elements.uploadPrivacy.value = state.defaultPrivacy;
-            if (state.defaultCategory) elements.uploadCategoryId.value = state.defaultCategory;
-            if (state.defaultKids !== null) elements.uploadMadeForKids.value = state.defaultKids;
-            elements.uploadPrivacy.dispatchEvent(new Event('change'));
-        }
+            // Drag and drop video
+            elements.dropZone.addEventListener('click', () => elements.videoFileInput.click());
+            elements.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.add('drag-over');
+            });
+            elements.dropZone.addEventListener('dragleave', () => elements.dropZone.classList.remove('drag-over'));
+            elements.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.remove('drag-over');
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleVideoSelection(e.dataTransfer.files[0]);
+                }
             });
             elements.videoFileInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files.length > 0) {
@@ -467,7 +700,7 @@
             });
             elements.btnBackStep2.addEventListener('click', () => switchStep(2));
 
-            // Modal Guide
+            // Modal Guide Toggle
             document.getElementById('btn-open-guide').addEventListener('click', () => {
                 document.getElementById('modal-guide').classList.remove('hidden');
             });
@@ -504,6 +737,21 @@
 
             // Upload Button
             elements.btnStartUpload.addEventListener('click', startYouTubeUpload);
+        }
+
+        // STEP 3: Sync Final Summary & Apply Defaults
+        function syncFinalSummary() {
+            const currentNewName = elements.aiFilenameInput.value.trim() || 'video-renamed.mp4';
+            updateRenamedFileObject(currentNewName);
+
+            elements.finalSummaryTitle.textContent = elements.aiTitleInput.value || 'Tanpa Judul';
+            elements.finalSummaryFilename.textContent = state.renamedFile.name;
+
+            // Apply saved defaults if user hasn't touched upload form
+            if (state.defaultPrivacy) elements.uploadPrivacy.value = state.defaultPrivacy;
+            if (state.defaultCategory) elements.uploadCategoryId.value = state.defaultCategory;
+            if (state.defaultKids !== null) elements.uploadMadeForKids.value = state.defaultKids;
+            elements.uploadPrivacy.dispatchEvent(new Event('change'));
         }
 
         // Step Navigation Switcher
@@ -583,13 +831,12 @@
 
         // STEP 2: Gemini AI Metadata Generation (Updated with Auto-Retry & Fallback)
         async function fetchGeminiWithRetryAndFallback(payload, apiKey) {
-            // Priority models: primary model -> fallbacks
             const models = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
             const maxRetriesPerModel = 3;
             let lastError = null;
 
             for (const model of models) {
-                let delay = 2000; // start 2 sec delay
+                let delay = 2000;
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
                 for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
@@ -606,7 +853,6 @@
                             return await response.json();
                         }
 
-                        // Handle rate limit (429) or high demand/server busy (503/500)
                         if (response.status === 429 || response.status === 503 || response.status === 500) {
                             const errJson = await response.json().catch(() => ({}));
                             lastError = errJson.error?.message || `HTTP ${response.status} (High Demand)`;
@@ -614,7 +860,7 @@
                             if (attempt < maxRetriesPerModel) {
                                 elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Server sibuk. Menunggu ${delay/1000}d lalu mencoba lagi...</span>`;
                                 await new Promise(res => setTimeout(res, delay));
-                                delay *= 2; // exponential backoff
+                                delay *= 2;
                                 continue;
                             }
                         } else {
@@ -653,7 +899,6 @@
             elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menganalisis dengan AI...</span>`;
 
             try {
-                // Remove base64 header for Gemini inlineData
                 const base64Data = state.snapshotBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
 
                 const systemPrompt = `Anda adalah seorang Pakar SEO YouTube profesional. Tugas Anda adalah menganalisis gambar snapshot video yang diberikan beserta konteksnya, lalu menghasilkan metadata video yang menarik, ramah SEO, dan berpotensi viral.
@@ -696,7 +941,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                     }
                 };
 
-                // Execute with retry & fallback mechanism
                 const result = await fetchGeminiWithRetryAndFallback(payload, state.geminiApiKey);
                 const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
@@ -706,7 +950,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
 
                 const parsed = JSON.parse(jsonText);
 
-                // Update UI & State
                 state.aiResults = parsed;
                 elements.aiTitleInput.value = parsed.title || '';
                 elements.aiDescInput.value = parsed.description || '';
@@ -714,7 +957,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                 elements.aiFilenameInput.value = parsed.suggestedFilename || 'video-renamed.mp4';
                 elements.titleCharCount.textContent = `${elements.aiTitleInput.value.length}/100`;
 
-                // Automatically update renamed file object in memory
                 updateRenamedFileObject(elements.aiFilenameInput.value);
 
                 showToast('Inspeksi AI Selesai! Metadata berhasil dibuat.', 'success');
@@ -766,7 +1008,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
 
             const textToCopy = `JUDUL:\n${title}\n\nDESKRIPSI:\n${desc}\n\nTAGS:\n${tags}`;
 
-            // Clipboard copy via execCommand fallback
             const textarea = document.createElement('textarea');
             textarea.value = textToCopy;
             document.body.appendChild(textarea);
@@ -775,15 +1016,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
             document.body.removeChild(textarea);
 
             showToast('Semua metadata disalin ke clipboard!', 'success');
-        }
-
-        // STEP 3: Sync Final Summary
-        function syncFinalSummary() {
-            const currentNewName = elements.aiFilenameInput.value.trim() || 'video-renamed.mp4';
-            updateRenamedFileObject(currentNewName);
-
-            elements.finalSummaryTitle.textContent = elements.aiTitleInput.value || 'Tanpa Judul';
-            elements.finalSummaryFilename.textContent = state.renamedFile.name;
         }
 
         // Google OAuth 2.0 Identity Login
@@ -808,7 +1040,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                     }
                     state.googleAccessToken = response.access_token;
                     
-                    // Update Auth UI
                     elements.googleAuthBadge.classList.remove('hidden');
                     elements.googleAuthBadge.classList.add('flex');
                     elements.ytUserName.textContent = 'Terhubung (Ready to Upload)';
@@ -846,7 +1077,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                 return;
             }
 
-            // Construct YouTube Resource Metadata Payload
             const metadata = {
                 snippet: {
                     title: title,
@@ -860,7 +1090,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                 }
             };
 
-            // If scheduled, attach publishAt datetime in ISO String format
             if (privacyStatus === 'scheduled') {
                 const publishAtVal = elements.uploadPublishAt.value;
                 if (!publishAtVal) {
@@ -870,13 +1099,11 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                 metadata.status.publishAt = new Date(publishAtVal).toISOString();
             }
 
-            // Show Progress Bar UI
             elements.uploadProgressContainer.classList.remove('hidden');
             elements.btnStartUpload.disabled = true;
             elements.btnStartUpload.classList.add('opacity-50');
 
             try {
-                // Step A: Initiate Resumable Upload Session
                 elements.uploadStatusText.textContent = 'Menginisialisasi sesi upload YouTube...';
                 
                 const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
@@ -900,7 +1127,6 @@ Berikan output JSON metadata lengkap sesuai spesifikasi format JSON. Sertakan na
                     throw new Error('YouTube API tidak memberikan Session Upload Location.');
                 }
 
-                // Step B: Upload File Content in Resumable Chunks / Single Stream
                 elements.uploadStatusText.textContent = 'Mengirim berkas video ke YouTube...';
 
                 const xhr = new XMLHttpRequest();
