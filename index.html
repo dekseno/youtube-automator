@@ -66,7 +66,7 @@
                     <i class="fa-solid font-bold fa-play text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Prosus</h1>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pro</h1>
                     <span class="text-xs text-slate-400">AI Inspector & YouTube Scheduler</span>
                 </div>
             </div>
@@ -832,8 +832,8 @@
         // STEP 2: Gemini AI Metadata Generation (Updated with Timeout & Valid Model Names)
         // STEP 2: Gemini AI Metadata Generation (Updated with Working Models & Resilient Fallback)
         async function fetchGeminiWithRetryAndFallback(payload, apiKey) {
-            // Gunakan daftar model yang kompatibel dengan generateContent v1beta
-            const models = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+            // Gunakan daftar model resmi yang kompatibel dengan generateContent v1beta
+            const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-3.1-pro-preview'];
             const maxRetriesPerModel = 2;
             let lastError = null;
 
@@ -873,7 +873,7 @@
                             continue;
                         }
 
-                        // Jika model tidak ditemukan (404) atau error lain, keluar dari inner loop dan coba model berikutnya
+                        // Jika model tidak ditemukan (404/400/deprecated), keluar dari inner loop dan coba model berikutnya
                         break;
                     } catch (err) {
                         lastError = err.name === 'AbortError' ? 'Koneksi Timeout (15s)' : err.message;
