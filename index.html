@@ -66,7 +66,7 @@
                     <i class="fa-solid font-bold fa-play text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator PRA</h1>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pro</h1>
                     <span class="text-xs text-slate-400">AI Inspector & YouTube Scheduler</span>
                 </div>
             </div>
@@ -824,52 +824,60 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(elements.videoPreview, 0, 0, canvas.width, canvas.height);
 
-            // Compress snapshot to JPEG base64 (0.7 quality to keep payload light)
-            state.snapshotBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            elements.snapshotImg.src = state.snapshotBase64;
+            const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+            state.snapshotBase64 = dataURL;
+            elements.snapshotImg.src = dataURL;
         }
 
-        // STEP 2: Gemini AI Metadata Generation (Updated with Auto-Retry & Fallback)
+        // STEP 2: Gemini AI Metadata Generation (Updated with Timeout & Valid Model Names)
         async function fetchGeminiWithRetryAndFallback(payload, apiKey) {
-            const models = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-            const maxRetriesPerModel = 3;
+            // Gunakan nama model resmi Google API yang valid
+            const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+            const maxRetriesPerModel = 2;
             let lastError = null;
 
             for (const model of models) {
-                let delay = 2000;
+                let delay = 1500;
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
                 for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
                     try {
-                        elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Mencoba model ${model} (Upaya ${attempt}/${maxRetriesPerModel})...</span>`;
+                        elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menganalisis (${model})...</span>`;
+
+                        // Controller timeout 15 detik agar tidak hanging/lama
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
                         const response = await fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
+                            body: JSON.stringify(payload),
+                            signal: controller.signal
                         });
+
+                        clearTimeout(timeoutId);
 
                         if (response.ok) {
                             return await response.json();
                         }
 
+                        const errJson = await response.json().catch(() => ({}));
+                        lastError = errJson.error?.message || `HTTP ${response.status}`;
+
                         if (response.status === 429 || response.status === 503 || response.status === 500) {
-                            const errJson = await response.json().catch(() => ({}));
-                            lastError = errJson.error?.message || `HTTP ${response.status} (High Demand)`;
-                            
                             if (attempt < maxRetriesPerModel) {
-                                elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Server sibuk. Menunggu ${delay/1000}d lalu mencoba lagi...</span>`;
+                                elements.btnGenerateAi.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Server padat. Mencoba lagi dalam ${delay/1000}s...</span>`;
                                 await new Promise(res => setTimeout(res, delay));
                                 delay *= 2;
                                 continue;
                             }
                         } else {
-                            const errJson = await response.json().catch(() => ({}));
-                            throw new Error(errJson.error?.message || `HTTP ${response.status}`);
+                            // Jika error 404/400 (model tidak ditemukan / API Key salah), langsung ganti model
+                            break;
                         }
                     } catch (err) {
-                        lastError = err.message;
-                        if (attempt < maxRetriesPerModel && err.message.includes('Fetch')) {
+                        lastError = err.name === 'AbortError' ? 'Koneksi Timeout (15s)' : err.message;
+                        if (attempt < maxRetriesPerModel) {
                             await new Promise(res => setTimeout(res, delay));
                             delay *= 2;
                             continue;
@@ -877,7 +885,7 @@
                     }
                 }
             }
-            throw new Error(lastError || 'Semua model Gemini sedang sibuk. Silakan coba beberapa saat lagi.');
+            throw new Error(lastError || 'Gagal terhubung ke Gemini AI. Periksa Gemini API Key Anda.');
         }
 
         async function generateAiMetadata() {
