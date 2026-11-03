@@ -1155,9 +1155,9 @@
             state.selectedFile = file;
             state.renamedFile = file;
 
-            elements.videoFileName.textContent = file.name;
-            elements.fileSizeBadge.textContent = formatBytes(file.size);
-            elements.metaType.textContent = file.type || 'video/mp4';
+            if (elements.videoFileName) elements.videoFileName.textContent = file.name;
+            if (elements.fileSizeBadge) elements.fileSizeBadge.textContent = formatBytes(file.size);
+            if (elements.metaType) elements.metaType.textContent = file.type || 'video/mp4';
 
             const objectUrl = URL.createObjectURL(file);
             elements.videoPreview.src = objectUrl;
@@ -1166,6 +1166,16 @@
                 state.videoMeta.duration = elements.videoPreview.duration;
                 state.videoMeta.width = elements.videoPreview.videoWidth;
                 state.videoMeta.height = elements.videoPreview.videoHeight;
+
+                if (elements.metaDuration) elements.metaDuration.textContent = formatSeconds(state.videoMeta.duration);
+                if (elements.metaResolution) elements.metaResolution.textContent = `${state.videoMeta.width} x ${state.videoMeta.height}`;
+
+                if (elements.videoInfoCard) elements.videoInfoCard.classList.remove('hidden');
+
+                extractMultiThumbnails();
+            };
+        }
+
         // Extract 5 Multi-Frame Thumbnails (Early Frames Focus)
         function extractMultiThumbnails() {
             const video = elements.videoPreview;
