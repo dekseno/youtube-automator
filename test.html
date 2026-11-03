@@ -119,6 +119,13 @@
                         <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 hover:underline">Console <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                     </label>
                     <input type="text" id="input-oauth-client-id" placeholder="12345...apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                    <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[10px] space-y-1">
+                        <span class="text-slate-400 block font-medium">Salin Redirect URI ini ke Google Cloud Console:</span>
+                        <div class="flex items-center justify-between font-mono text-brand-400 bg-slate-900 p-1.5 rounded border border-slate-800">
+                            <span id="txt-redirect-uri-display" class="truncate"></span>
+                            <button onclick="copyRedirectUriToClipboard()" class="text-slate-300 hover:text-white px-1.5 py-0.5 bg-slate-800 rounded text-[9px] shrink-0 ml-1">Copy</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Default Visibility -->
@@ -682,10 +689,13 @@
             elements.selectedThumbnailImg = document.getElementById('selected-thumbnail-img');
             elements.inputRenamedFilename = document.getElementById('input-renamed-filename');
             elements.inputAiTitle = document.getElementById('input-ai-title');
-            elements.inputProductTag = document.getElementById('input-product-tag');
+            elements.titleCharCount = document.getElementById('title-char-count');
             elements.inputAiDescription = document.getElementById('input-ai-description');
             elements.inputAiTags = document.getElementById('input-ai-tags');
-            elements.titleCharCount = document.getElementById('title-char-count');
+            elements.inputProductTag = document.getElementById('input-product-tag');
+
+            elements.stepContents = document.querySelectorAll('.step-content');
+            elements.stepTabs = document.querySelectorAll('.step-tab');
 
             elements.selectChannelAccount = document.getElementById('select-channel-account');
             elements.oauthUserStatusText = document.getElementById('oauth-user-status-text');
@@ -701,14 +711,32 @@
             elements.statShortsCount = document.getElementById('stat-shorts-count');
             elements.statVideosCount = document.getElementById('stat-videos-count');
             elements.statScheduledCount = document.getElementById('stat-scheduled-count');
-            elements.btnFetchLiveVideos = document.getElementById('btn-fetch-live-videos');
-            elements.historyEmptyState = document.getElementById('history-empty-state');
             elements.historyVerticalContainer = document.getElementById('history-vertical-container');
-            elements.stepTabs = document.querySelectorAll('.step-tab');
-            elements.stepContents = document.querySelectorAll('.step-content');
+            elements.historyEmptyState = document.getElementById('history-empty-state');
         }
 
-        // Settings Management
+        function getCleanRedirectUri() {
+            let uri = window.location.origin + window.location.pathname;
+            if (uri.endsWith('/index.html')) {
+                uri = uri.slice(0, -10);
+            }
+            if (!uri.endsWith('/')) {
+                uri += '/';
+            }
+            return uri;
+        }
+
+        function copyRedirectUriToClipboard() {
+            const uri = getCleanRedirectUri();
+            const tempInput = document.createElement('input');
+            tempInput.value = uri;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Redirect URI berhasil disalin ke clipboard!', 'success');
+        }
+
         function loadSettings() {
             state.geminiApiKey = localStorage.getItem('yt_automator_gemini_key') || '';
             state.selectedGeminiModel = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
@@ -723,6 +751,11 @@
             if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = state.defaultPrivacy;
             if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = state.defaultCategory;
             if (elements.selectDefaultKids) elements.selectDefaultKids.value = state.defaultKids;
+
+            const redirectUriDisplay = document.getElementById('txt-redirect-uri-display');
+            if (redirectUriDisplay) {
+                redirectUriDisplay.textContent = getCleanRedirectUri();
+            }
 
             if (elements.uploadPrivacy) elements.uploadPrivacy.value = state.defaultPrivacy;
             if (elements.uploadCategoryId) elements.uploadCategoryId.value = state.defaultCategory;
@@ -1082,7 +1115,7 @@ Hasilkan metadata YouTube lengkap format JSON murni:
                 return;
             }
 
-            const redirectUri = window.location.origin + window.location.pathname;
+            const redirectUri = getCleanRedirectUri();
             const scope = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly';
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(state.oauthClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
 
