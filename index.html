@@ -66,7 +66,7 @@
                     <i class="fa-solid font-bold fa-play text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Proo</h1>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">YT Automator Pri</h1>
                     <span class="text-xs text-slate-400">AI Inspector & YouTube Scheduler</span>
                 </div>
             </div>
@@ -724,6 +724,47 @@
             elements.videoFileName.textContent = file.name;
             elements.fileSizeBadge.textContent = formatBytes(file.size);
             elements.metaType.textContent = file.type || 'video/mp4';
+
+            // Show Preview Video Player & Read Metadata
+            const fileURL = URL.createObjectURL(file);
+            elements.videoPreview.src = fileURL;
+
+            elements.videoPreview.onloadedmetadata = () => {
+                state.videoMeta.duration = elements.videoPreview.duration;
+                state.videoMeta.width = elements.videoPreview.videoWidth;
+                state.videoMeta.height = elements.videoPreview.videoHeight;
+                state.videoMeta.type = file.type;
+
+                elements.metaDuration.textContent = formatSeconds(elements.videoPreview.duration);
+                elements.metaResolution.textContent = `${elements.videoPreview.videoWidth} x ${elements.videoPreview.videoHeight}`;
+
+                // Extract frame snapshot for AI
+                elements.videoPreview.currentTime = Math.min(2.0, elements.videoPreview.duration / 2);
+            };
+
+            elements.videoPreview.onseeked = () => {
+                extractFrameSnapshot();
+            };
+
+            elements.dropZone.classList.add('hidden');
+            elements.videoInfoCard.classList.remove('hidden');
+        }
+
+        // Extract Video Snapshot Frame using HTML5 Canvas
+        function extractFrameSnapshot() {
+            if (!elements.videoPreview.videoWidth) return;
+
+            const canvas = elements.frameCanvas;
+            canvas.width = elements.videoPreview.videoWidth;
+            canvas.height = elements.videoPreview.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(elements.videoPreview, 0, 0, canvas.width, canvas.height);
+
+            // Compress snapshot to JPEG base64 (0.7 quality to keep payload light)
+            state.snapshotBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            elements.snapshotImg.src = state.snapshotBase64;
+        }
+
         // STEP 2: Gemini AI Metadata Generation (Updated with Auto-Retry & Fallback)
         async function fetchGeminiWithRetryAndFallback(payload, apiKey) {
             // Priority models: primary model -> fallbacks
