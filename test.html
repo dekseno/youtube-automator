@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Automator Pro - AI Video Inspector & YouTube Uploader</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-red-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                    <i class="fa-brands fa-youtube text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
+                        YT Automator <span class="bg-gradient-to-r from-brand-400 to-pink-500 bg-clip-text text-transparent text-xs font-black uppercase px-1.5 py-0.5 rounded border border-brand-500/30">Pro</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & YouTube Multi-Channel Scheduler</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="btn-toggle-settings" onclick="toggleSettingsPanel()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-brand-400"></i>
+                    <span id="txt-toggle-settings">Buka Pengaturan API</span>
+                </button>
+
+                <button onclick="openGuideModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question text-blue-400"></i>
+                    <span class="hidden sm:inline">Panduan</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+
+        <!-- BYOK Settings Panel (Collapsible) -->
+        <div id="settings-panel" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-key text-brand-500"></i>
+                    <h2 class="font-bold text-sm text-slate-100">Pengaturan Kunci Akses & Default Upload (BYOK)</h2>
+                </div>
+                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">100% Client-Side & Gratis</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                <!-- Gemini API Key -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300 flex justify-between">
+                        <span>Gemini API Key</span>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 hover:underline">Get Key Gratis <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
+                    </label>
+                    <input type="password" id="input-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+
+                <!-- Gemini Model Selection -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300 flex justify-between">
+                        <span>Model Gemini AI</span>
+                        <button onclick="fetchAvailableGeminiModels()" class="text-brand-400 hover:underline"><i class="fa-solid fa-rotate text-[10px]"></i> Update List</button>
+                    </label>
+                    <select id="select-gemini-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="gemini-3.6-flash">gemini-3.6-flash (Terbaru - Rekomendasi)</option>
+                        <option value="gemini-3.8-flash">gemini-3.8-flash (Standard)</option>
+                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Ringan)</option>
+                        <option value="gemini-2.5-flash">gemini-2.5-flash (Cepat)</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Stabil)</option>
+                    </select>
+                </div>
+
+                <!-- Google OAuth Client ID -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300 flex justify-between">
+                        <span>Google Client ID (OAuth 2.0)</span>
+                        <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 hover:underline">Console <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
+                    </label>
+                    <input type="text" id="input-oauth-client-id" placeholder="12345...apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+
+                <!-- Default Visibility -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300">Default Visibilitas</label>
+                    <select id="select-default-privacy" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="scheduled">Jadwalkan (Scheduled)</option>
+                        <option value="private">Pribadi (Private)</option>
+                        <option value="unlisted">Tidak Publik (Unlisted)</option>
+                        <option value="public">Publik (Public)</option>
+                    </select>
+                </div>
+
+                <!-- Default Category -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300">Default Kategori YouTube</label>
+                    <select id="select-default-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="17">Olahraga</option>
+                        <option value="25">Berita & Politik</option>
+                        <option value="22">Blog & Orang</option>
+                        <option value="26">Cara & Gaya</option>
+                        <option value="1">Film & Animasi</option>
+                        <option value="20">Game</option>
+                        <option value="15">Hewan & Peliharaan</option>
+                        <option value="24">Hiburan</option>
+                        <option value="23">Komedi</option>
+                        <option value="2">Mobil & Kendaraan</option>
+                        <option value="10">Musik</option>
+                        <option value="29">Nonprofit & Aktivisme</option>
+                        <option value="27">Pendidikan</option>
+                        <option value="19">Perjalanan & Acara</option>
+                        <option value="28">Sains & Teknologi</option>
+                    </select>
+                </div>
+
+                <!-- Default Made For Kids -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300">Default Konten Anak?</label>
+                    <select id="select-default-kids" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="false" selected>Tidak dibuat untuk anak-anak</option>
+                        <option value="true">Ya, dibuat untuk anak-anak</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="saveSettings()" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Simpan Pengaturan</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4-Step Navigation Tabs -->
+        <div class="flex items-center justify-between bg-slate-900 p-1.5 border border-slate-800 rounded-2xl overflow-x-auto scrollbar-none">
+            <button class="step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow" onclick="switchStep(1)">
+                <span class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">1</span>
+                <span>Pilih Video</span>
+            </button>
+            <button class="step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" onclick="switchStep(2)">
+                <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">2</span>
+                <span>Inspeksi AI & Rename</span>
+            </button>
+            <button class="step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" onclick="switchStep(3)">
+                <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">3</span>
+                <span>Unggah & Jadwal</span>
+            </button>
+            <button class="step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200" onclick="switchStep(4)">
+                <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[10px]">4</span>
+                <span>Koleksi Channel</span>
+            </button>
+        </div>
+
+        <!-- STEP 1: VIDEO BROWSE & SELECTION -->
+        <div id="step-1" class="step-content space-y-5">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4 shadow-xl">
+                <div class="w-16 h-16 rounded-2xl bg-brand-500/10 text-brand-400 flex items-center justify-center mx-auto text-2xl border border-brand-500/20">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-100">Pilih Berkas Video untuk Mula Inspeksi</h3>
+                    <p class="text-xs text-slate-400 max-w-md mx-auto mt-1">Format didukung: MP4, MOV, WEBM, AVI. Berkas diproses 100% lokal di browser Anda.</p>
+                </div>
+                <input type="file" id="file-video-input" accept="video/*" class="hidden" onchange="handleVideoFileSelect(event)">
+                <button onclick="document.getElementById('file-video-input').click()" class="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>Browse File Video</span>
+                </button>
+            </div>
+
+            <!-- Video Specs & Local Preview Player -->
+            <div id="video-preview-card" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-5 shadow-xl">
+                <div class="space-y-3">
+                    <h4 class="font-bold text-slate-200 text-xs uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-circle-play text-brand-500"></i> Player Preview Video
+                    </h4>
+                    <div class="aspect-video bg-black rounded-xl overflow-hidden border border-slate-800">
+                        <video id="video-preview" controls class="w-full h-full object-contain"></video>
+                    </div>
+                </div>
+
+                <div class="space-y-4 flex flex-col justify-between">
+                    <div class="space-y-3 text-xs">
+                        <h4 class="font-bold text-slate-200 uppercase tracking-wider">Detail Meta Berkas</h4>
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2 font-mono text-slate-300">
+                            <p class="flex justify-between"><span class="text-slate-500">Nama Asli:</span> <span id="meta-file-name" class="font-bold truncate max-w-[200px]"></span></p>
+                            <p class="flex justify-between"><span class="text-slate-500">Ukuran:</span> <span id="meta-file-size"></span></p>
+                            <p class="flex justify-between"><span class="text-slate-500">Durasi:</span> <span id="meta-duration"></span></p>
+                            <p class="flex justify-between"><span class="text-slate-500">Resolusi:</span> <span id="meta-resolution"></span></p>
+                        </div>
+                    </div>
+
+                    <button onclick="startAiInspection()" class="w-full py-3 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Inspeksi & Generate Metadata AI</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: AI INSPECTION & METADATA -->
+        <div id="step-2" class="step-content hidden space-y-5">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <!-- Left: Thumbnail Selection (5 Snapshots) & Auto-Rename -->
+                <div class="space-y-4 lg:col-span-1">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-xs text-slate-200 uppercase tracking-wider">Snapshot Thumbnail (Frame Awal)</h4>
+                            <span class="text-[10px] text-slate-400">Pilih 1 dari 5 frame</span>
+                        </div>
+                        <div id="thumbnail-gallery" class="grid grid-cols-5 gap-1.5 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <!-- 5 Frame Thumbnails rendered here -->
+                        </div>
+                        <div class="aspect-video bg-black rounded-xl overflow-hidden border border-brand-500/50 relative shadow">
+                            <img id="selected-thumbnail-img" class="w-full h-full object-cover">
+                            <span class="absolute bottom-2 right-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">Thumbnail Terpilih</span>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Rename Card -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
+                        <h4 class="font-bold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-file-pen text-brand-400"></i> Auto-Rename Berkas Video
+                        </h4>
+                        <div class="space-y-2 text-xs">
+                            <label class="block text-slate-400">Rekomendasi Nama Berkas SEO:</label>
+                            <input type="text" id="input-renamed-filename" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-brand-500">
+                            <button onclick="downloadRenamedVideo()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-download text-emerald-400"></i>
+                                <span>Download Video Ter-Rename</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: AI Generated Metadata Form -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 lg:col-span-2 space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-brain text-brand-500"></i> Metadata Hasil AI Gemini
+                        </h4>
+                        <button onclick="startAiInspection()" class="text-xs text-brand-400 hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-rotate"></i> Regenerate
+                        </button>
+                    </div>
+
+                    <div class="space-y-4 text-xs">
+                        <!-- Judul Video dengan Hashtag SEO (Max 100 char) -->
+                        <div class="space-y-1.5">
+                            <label class="block font-medium text-slate-300 flex justify-between">
+                                <span>Judul Video (Wajib sertakan #shorts & hashtag SEO, max 100 char)</span>
+                                <span id="title-char-count" class="text-slate-400">0/100</span>
+                            </label>
+                            <input type="text" id="input-ai-title" maxlength="100" oninput="updateCharCount()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 font-semibold focus:outline-none focus:border-brand-500">
+                        </div>
+
+                        <!-- Tag Produk / Link Afiliasi -->
+                        <div class="space-y-1.5">
+                            <label class="block font-medium text-slate-300">Tag Produk / Link Afiliasi / Toko (Otomatis disisipkan ke Deskripsi)</label>
+                            <input type="text" id="input-product-tag" placeholder="Contoh: Link Beli Sepatu: https://tokopedia.com/xyz" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        </div>
+
+                        <!-- Deskripsi -->
+                        <div class="space-y-1.5">
+                            <label class="block font-medium text-slate-300">Deskripsi Lengkap YouTube</label>
+                            <textarea id="input-ai-description" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+                        </div>
+
+                        <!-- Tags YouTube -->
+                        <div class="space-y-1.5">
+                            <label class="block font-medium text-slate-300">Tag YouTube (Dipisahkan Koma)</label>
+                            <input type="text" id="input-ai-tags" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+                        <button onclick="switchStep(1)" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700 transition">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+                        </button>
+                        <button onclick="proceedToStep3()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center gap-2">
+                            <span>Lanjut ke Upload & Jadwal</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: UPLOAD & SCHEDULING -->
+        <div id="step-3" class="step-content hidden space-y-5">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5 max-w-3xl mx-auto shadow-xl">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                        <i class="fa-brands fa-youtube text-red-500 text-base"></i> Konfigurasi Unggah YouTube API
+                    </h3>
+                    <span id="oauth-user-status-text" class="text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">Belum Terkoneksi OAuth</span>
+                </div>
+
+                <!-- Multi-Channel Selector & OAuth Login -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300">Pilih Channel YouTube Tujuan</label>
+                            <p class="text-[11px] text-slate-400">Dukungan Multi-Channel YouTube aktif</p>
+                        </div>
+                        <button onclick="startGoogleOAuthLogin()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
+                            <i class="fa-brands fa-google text-red-400"></i>
+                            <span>+ Tambah Akun / Channel</span>
+                        </button>
+                    </div>
+                    <select id="select-channel-account" onchange="handleChannelSelectChange()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="">-- Pilih Akun / Login Google Terlebih Dahulu --</option>
+                    </select>
+                </div>
+
+                <!-- Privacy & Datetime Schedule Form -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="space-y-1.5">
+                        <label class="block font-medium text-slate-300">Visibilitas Unggah</label>
+                        <select id="upload-privacy" onchange="toggleScheduleDatePicker()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="scheduled">Jadwalkan (Scheduled)</option>
+                            <option value="private">Pribadi (Private)</option>
+                            <option value="unlisted">Tidak Publik (Unlisted)</option>
+                            <option value="public">Publik (Public)</option>
+                        </select>
+                    </div>
+
+                    <div id="schedule-date-container" class="space-y-1.5">
+                        <label class="block font-medium text-slate-300">Tanggal & Jam Tayang Otomatis</label>
+                        <input type="datetime-local" id="upload-publish-at" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block font-medium text-slate-300">Kategori YouTube</label>
+                        <select id="upload-category-id" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="17">Olahraga</option>
+                            <option value="25">Berita & Politik</option>
+                            <option value="22">Blog & Orang</option>
+                            <option value="26">Cara & Gaya</option>
+                            <option value="1">Film & Animasi</option>
+                            <option value="20">Game</option>
+                            <option value="15">Hewan & Peliharaan</option>
+                            <option value="24">Hiburan</option>
+                            <option value="23">Komedi</option>
+                            <option value="2">Mobil & Kendaraan</option>
+                            <option value="10">Musik</option>
+                            <option value="29">Nonprofit & Aktivisme</option>
+                            <option value="27">Pendidikan</option>
+                            <option value="19">Perjalanan & Acara</option>
+                            <option value="28">Sains & Teknologi</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block font-medium text-slate-300">Konten Untuk Anak-Anak?</label>
+                        <select id="upload-made-for-kids" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="false" selected>Tidak dibuat untuk anak-anak</option>
+                            <option value="true">Ya, dibuat untuk anak-anak</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Resumable Upload Progress Bar -->
+                <div id="upload-progress-container" class="hidden space-y-2 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="flex justify-between text-xs">
+                        <span id="upload-status-text" class="text-brand-400 font-medium">Mengunggah ke YouTube API...</span>
+                        <span id="upload-percentage" class="font-mono text-slate-300">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                        <div id="upload-progress-bar" class="bg-gradient-to-r from-brand-500 to-pink-500 h-full w-0 transition-all duration-200"></div>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800 flex justify-between">
+                    <button onclick="switchStep(2)" id="btn-back-step2" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali Edit Metadata
+                    </button>
+                    <button onclick="startYouTubeUpload()" id="btn-start-upload" class="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-red-600/30 flex items-center gap-2">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Unggah Sekarang</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: COLLECTION & YT STUDIO HP LAYOUT -->
+        <div id="step-4" class="step-content hidden space-y-5">
+            <!-- Stats Overview Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[11px] text-slate-400">Total Diunggah</span>
+                        <span class="text-lg font-bold text-slate-100" id="stat-total-count">0</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center text-base"><i class="fa-solid fa-video"></i></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[11px] text-slate-400">Total Shorts (#shorts)</span>
+                        <span class="text-lg font-bold text-red-400" id="stat-shorts-count">0</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center text-base"><i class="fa-solid fa-bolt"></i></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[11px] text-slate-400">Video Reguler</span>
+                        <span class="text-lg font-bold text-blue-400" id="stat-videos-count">0</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-base"><i class="fa-solid fa-film"></i></div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[11px] text-slate-400">Dijadwalkan</span>
+                        <span class="text-lg font-bold text-amber-400" id="stat-scheduled-count">0</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-base"><i class="fa-solid fa-clock"></i></div>
+                </div>
+            </div>
+
+            <!-- YT Studio HP Style Collection List Section -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-brands fa-youtube text-red-500 text-lg"></i>
+                        <h3 class="font-bold text-slate-200 text-sm">Daftar Konten Channel (Tampilan YouTube Studio)</h3>
+                    </div>
+
+                    <!-- Quick Filter Pills & Modal Trigger -->
+                    <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+                        <button id="btn-fetch-live-videos" onclick="fetchCurrentChannelLiveVideos()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-full text-xs font-bold border border-brand-500 transition flex items-center gap-1.5 shrink-0">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Sync Live YouTube</span>
+                        </button>
+                        <button id="btn-open-yt-filter" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium border border-slate-700 transition flex items-center gap-1.5 shrink-0">
+                            <i class="fa-solid fa-sliders text-brand-400"></i>
+                            <span>Filter</span>
+                        </button>
+                        <button onclick="quickFilterSort('newest')" class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-full text-xs border border-slate-800 transition shrink-0 flex items-center gap-1">
+                            <span>Urutkan: Terbaru</span>
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </button>
+                        <button onclick="quickFilterVisibility('scheduled')" class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-amber-400 rounded-full text-xs border border-slate-800 transition shrink-0 flex items-center gap-1">
+                            <i class="fa-solid fa-clock text-[10px]"></i>
+                            <span>Terjadwal</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Filter Indicator Bar -->
+                <div id="active-filter-tags" class="hidden flex flex-wrap gap-2 text-[11px] items-center bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 font-medium">Filter Aktif:</span>
+                    <div id="active-filter-chips" class="flex flex-wrap gap-1.5"></div>
+                    <button onclick="resetAllFilters()" class="text-brand-400 hover:underline ml-auto font-medium">Reset Filter</button>
+                </div>
+
+                <!-- Empty State -->
+                <div id="history-empty-state" class="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Belum ada koleksi video/shorts yang diunggah atau sesuai filter.</p>
+                </div>
+
+                <!-- YT Studio HP Grid / List Container -->
+                <div id="history-vertical-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+                    <!-- Cards will be dynamically rendered here matching YouTube Studio mobile layout -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Instructions & Settings Guide -->
+    <div id="modal-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl relative">
+            <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-brand-500"></i> Panduan Setup Kunci Akses (100% Gratis)
+            </h3>
+            <div class="space-y-3 text-xs text-slate-300 overflow-y-auto max-h-[60vh] pr-2">
+                <p>Tools ini didesain 100% client-side tanpa server berbayar. Gunakan API Key pribadi Anda:</p>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-brand-400">1. Cara Dapatkan Gemini API Key Gratis:</h4>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Buka <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 underline">Google AI Studio</a>.</li>
+                        <li>Klik <b>Get API key</b> -> <b>Create API key</b>.</li>
+                        <li>Salin kunci tersebut lalu tempel di kolom Pengaturan Aplikasi.</li>
+                    </ol>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-brand-400">2. Cara Dapatkan Google Client ID (OAuth):</h4>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Buka <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 underline">Google Cloud Console</a>.</li>
+                        <li>Aktifkan <b>YouTube Data API v3</b> di bagian <i>APIs & Services</i>.</li>
+                        <li>Buat <b>OAuth 2.0 Client ID</b> (Web application).</li>
+                        <li>Tambahkan URL GitHub Pages Anda di <b>Authorized JavaScript origins</b>.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeGuideModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl">
+                    Mengerti & Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- YouTube Studio Filter Modal Sheet -->
+    <div id="modal-yt-filter" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900 sticky top-0 z-10">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-500"></i>
+                    <h3 class="font-bold text-slate-100 text-base">Filter Konten</h3>
+                </div>
+                <button onclick="closeYtFilterModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-6 text-xs text-slate-200">
+                <!-- Urutkan menurut -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-100 text-sm">Urutkan menurut</h4>
+                    <div class="space-y-2 pl-1">
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="radio" name="filter_sort_by" value="newest" checked class="accent-brand-500">
+                            <span>Terbaru (default)</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="radio" name="filter_sort_by" value="most_viewed" class="accent-brand-500">
+                            <span>Paling banyak ditonton</span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Visibilitas -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-100 text-sm">Visibilitas</h4>
+                    <div class="grid grid-cols-2 gap-2.5 pl-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="public" class="rounded accent-brand-500">
+                            <span>Publik</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="private" class="rounded accent-brand-500">
+                            <span>Pribadi</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="unlisted" class="rounded accent-brand-500">
+                            <span>Tidak publik</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="scheduled" class="rounded accent-brand-500">
+                            <span>Terjadwal</span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Penayangan -->
+                <div class="space-y-2.5">
+                    <h4 class="font-bold text-slate-100 text-sm">Penayangan</h4>
+                    <div class="flex gap-4 pl-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="filter_views_cond" value="greater" checked class="accent-brand-500">
+                            <span>Lebih dari</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="filter_views_cond" value="less" class="accent-brand-500">
+                            <span>Kurang dari</span>
+                        </label>
+                    </div>
+                    <input type="number" id="filter-views-val" placeholder="Masukkan angka" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
+                <button onclick="applyYtFilterModal()" class="w-full py-2.5 bg-slate-200 hover:bg-white text-slate-900 rounded-xl text-xs font-bold transition shadow">
+                    Terapkan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CLIENT JAVASCRIPT LOGIC -->
+    <script>
+        // Global App State
+        const state = {
+            geminiApiKey: '',
+            selectedGeminiModel: 'gemini-3.6-flash',
+            oauthClientId: '',
+            defaultPrivacy: 'scheduled',
+            defaultCategory: '17',
+            defaultKids: 'false',
+            settingsCollapsed: true,
+            googleAccessToken: null,
+            connectedChannels: [],
+            activeChannelId: null,
+            liveChannelVideos: [],
+            videoHistory: [],
+            selectedFile: null,
+            renamedFile: null,
+            thumbnails: [],
+            selectedThumbnailIndex: 0,
+            videoMeta: { duration: 0, width: 0, height: 0, type: '' },
+            aiResults: { title: '', description: '', tags: '', suggestedFilename: '' },
+            filterConfig: {
+                sortBy: 'newest',
+                visibility: [],
+                viewsCondition: 'greater',
+                viewsValue: null
+            }
+        };
+
+        const elements = {};
+
+        function initDOM() {
+            elements.inputGeminiKey = document.getElementById('input-gemini-key');
+            elements.selectGeminiModel = document.getElementById('select-gemini-model');
+            elements.inputOauthClientId = document.getElementById('input-oauth-client-id');
+            elements.selectDefaultPrivacy = document.getElementById('select-default-privacy');
+            elements.selectDefaultCategory = document.getElementById('select-default-category');
+            elements.selectDefaultKids = document.getElementById('select-default-kids');
+            elements.settingsPanel = document.getElementById('settings-panel');
+            elements.txtToggleSettings = document.getElementById('txt-toggle-settings');
+            
+            elements.videoPreviewCard = document.getElementById('video-preview-card');
+            elements.videoPreview = document.getElementById('video-preview');
+            elements.metaFileName = document.getElementById('meta-file-name');
+            elements.metaFileSize = document.getElementById('meta-file-size');
+            elements.metaDuration = document.getElementById('meta-duration');
+            elements.metaResolution = document.getElementById('meta-resolution');
+
+            elements.thumbnailGallery = document.getElementById('thumbnail-gallery');
+            elements.selectedThumbnailImg = document.getElementById('selected-thumbnail-img');
+            elements.inputRenamedFilename = document.getElementById('input-renamed-filename');
+            elements.inputAiTitle = document.getElementById('input-ai-title');
+            elements.inputProductTag = document.getElementById('input-product-tag');
+            elements.inputAiDescription = document.getElementById('input-ai-description');
+            elements.inputAiTags = document.getElementById('input-ai-tags');
+            elements.titleCharCount = document.getElementById('title-char-count');
+
+            elements.selectChannelAccount = document.getElementById('select-channel-account');
+            elements.oauthUserStatusText = document.getElementById('oauth-user-status-text');
+            elements.uploadPrivacy = document.getElementById('upload-privacy');
+            elements.uploadPublishAt = document.getElementById('upload-publish-at');
+            elements.uploadCategoryId = document.getElementById('upload-category-id');
+            elements.uploadMadeForKids = document.getElementById('upload-made-for-kids');
+            elements.uploadProgressContainer = document.getElementById('upload-progress-container');
+            elements.uploadProgressBar = document.getElementById('upload-progress-bar');
+            elements.uploadPercentage = document.getElementById('upload-percentage');
+
+            elements.statTotalCount = document.getElementById('stat-total-count');
+            elements.statShortsCount = document.getElementById('stat-shorts-count');
+            elements.statVideosCount = document.getElementById('stat-videos-count');
+            elements.statScheduledCount = document.getElementById('stat-scheduled-count');
+            elements.btnFetchLiveVideos = document.getElementById('btn-fetch-live-videos');
+            elements.historyEmptyState = document.getElementById('history-empty-state');
+            elements.historyVerticalContainer = document.getElementById('history-vertical-container');
+            elements.stepTabs = document.querySelectorAll('.step-tab');
+            elements.stepContents = document.querySelectorAll('.step-content');
+        }
+
+        // Settings Management
+        function loadSettings() {
+            state.geminiApiKey = localStorage.getItem('yt_automator_gemini_key') || '';
+            state.selectedGeminiModel = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
+            state.oauthClientId = localStorage.getItem('yt_automator_oauth_id') || '';
+            state.defaultPrivacy = localStorage.getItem('yt_automator_def_privacy') || 'scheduled';
+            state.defaultCategory = localStorage.getItem('yt_automator_def_category') || '17';
+            state.defaultKids = localStorage.getItem('yt_automator_def_kids') || 'false';
+
+            if (elements.inputGeminiKey) elements.inputGeminiKey.value = state.geminiApiKey;
+            if (elements.selectGeminiModel) elements.selectGeminiModel.value = state.selectedGeminiModel;
+            if (elements.inputOauthClientId) elements.inputOauthClientId.value = state.oauthClientId;
+            if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = state.defaultPrivacy;
+            if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = state.defaultCategory;
+            if (elements.selectDefaultKids) elements.selectDefaultKids.value = state.defaultKids;
+
+            if (elements.uploadPrivacy) elements.uploadPrivacy.value = state.defaultPrivacy;
+            if (elements.uploadCategoryId) elements.uploadCategoryId.value = state.defaultCategory;
+            if (elements.uploadMadeForKids) elements.uploadMadeForKids.value = state.defaultKids;
+
+            toggleScheduleDatePicker();
+        }
+
+        function saveSettings() {
+            state.geminiApiKey = elements.inputGeminiKey.value.trim();
+            state.selectedGeminiModel = elements.selectGeminiModel.value;
+            state.oauthClientId = elements.inputOauthClientId.value.trim();
+            state.defaultPrivacy = elements.selectDefaultPrivacy.value;
+            state.defaultCategory = elements.selectDefaultCategory.value;
+            state.defaultKids = elements.selectDefaultKids.value;
+
+            localStorage.setItem('yt_automator_gemini_key', state.geminiApiKey);
+            localStorage.setItem('yt_automator_gemini_model', state.selectedGeminiModel);
+            localStorage.setItem('yt_automator_oauth_id', state.oauthClientId);
+            localStorage.setItem('yt_automator_def_privacy', state.defaultPrivacy);
+            localStorage.setItem('yt_automator_def_category', state.defaultCategory);
+            localStorage.setItem('yt_automator_def_kids', state.defaultKids);
+
+            showToast('Pengaturan berhasil disimpan!', 'success');
+            toggleSettingsPanel();
+        }
+
+        function toggleSettingsPanel() {
+            state.settingsCollapsed = !state.settingsCollapsed;
+            if (state.settingsCollapsed) {
+                elements.settingsPanel.classList.add('hidden');
+                elements.txtToggleSettings.textContent = 'Buka Pengaturan API';
+            } else {
+                elements.settingsPanel.classList.remove('hidden');
+                elements.txtToggleSettings.textContent = 'Sembunyikan Pengaturan';
+            }
+        }
+
+        // Fetch List of Gemini Models automatically
+        async function fetchAvailableGeminiModels() {
+            if (!state.geminiApiKey) {
+                showToast('Masukkan Gemini API Key terlebih dahulu!', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${state.geminiApiKey}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const models = (data.models || []).filter(m => m.name.includes('flash') || m.name.includes('pro'));
+                if (models.length > 0 && elements.selectGeminiModel) {
+                    elements.selectGeminiModel.innerHTML = '';
+                    models.forEach(m => {
+                        const mName = m.name.replace('models/', '');
+                        elements.selectGeminiModel.innerHTML += `<option value="${mName}">${mName}</option>`;
+                    });
+                    showToast(`List ${models.length} model Gemini berhasil diupdate!`, 'success');
+                }
+            } catch (err) {
+                showToast(`Gagal update model: ${err.message}`, 'error');
+            }
+        }
+
+        // Navigation Switcher
+        function switchStep(stepNum) {
+            elements.stepContents.forEach((el, index) => {
+                if (index + 1 === stepNum) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+
+            elements.stepTabs.forEach((tab, index) => {
+                if (index + 1 === stepNum) {
+                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow';
+                } else {
+                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200';
+                }
+            });
+
+            if (stepNum === 4) {
+                renderVideoHistory();
+            }
+        }
+
+        // Step 1: Video File Selection & Frame Snapshots
+        function handleVideoFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            state.selectedFile = file;
+            state.renamedFile = file;
+
+            elements.metaFileName.textContent = file.name;
+            elements.metaFileSize.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            const url = URL.createObjectURL(file);
+            elements.videoPreview.src = url;
+            elements.videoPreviewCard.classList.remove('hidden');
+
+            elements.videoPreview.onloadedmetadata = () => {
+                state.videoMeta.duration = elements.videoPreview.duration;
+                state.videoMeta.width = elements.videoPreview.videoWidth;
+                state.videoMeta.height = elements.videoPreview.videoHeight;
+                state.videoMeta.type = file.type;
+
+                const dur = elements.videoPreview.duration;
+                const m = Math.floor(dur / 60);
+                const s = Math.floor(dur % 60);
+                elements.metaDuration.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                elements.metaResolution.textContent = `${elements.videoPreview.videoWidth} x ${elements.videoPreview.videoHeight}`;
+
+                captureThumbnailSnapshots();
+            };
+        }
+
+        // Capture exactly 5 frame snapshots from intro/early timestamps (0.5s, 1.5s, 3s, 5s, 8s)
+        function captureThumbnailSnapshots() {
+            state.thumbnails = [];
+            elements.thumbnailGallery.innerHTML = '';
+            
+            const tempVid = document.createElement('video');
+            tempVid.src = elements.videoPreview.src;
+            tempVid.muted = true;
+            
+            const timestamps = [0.5, 1.5, 3.0, 5.0, 8.0];
+            let index = 0;
+
+            tempVid.onloadedmetadata = () => {
+                const processNext = () => {
+                    if (index >= timestamps.length) return;
+                    tempVid.currentTime = Math.min(timestamps[index], tempVid.duration - 0.1);
+                };
+
+                tempVid.onseeked = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = tempVid.videoWidth || 640;
+                    canvas.height = tempVid.videoHeight || 360;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
+                    
+                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                    state.thumbnails.push(base64);
+
+                    const thImg = document.createElement('img');
+                    thImg.src = base64;
+                    thImg.className = `w-full aspect-square object-cover rounded-lg border-2 cursor-pointer transition ${index === 0 ? 'border-brand-500 scale-105' : 'border-slate-800 opacity-70 hover:opacity-100'}`;
+                    const currentIndex = index;
+                    thImg.onclick = () => selectThumbnail(currentIndex);
+                    elements.thumbnailGallery.appendChild(thImg);
+
+                    if (index === 0) selectThumbnail(0);
+
+                    index++;
+                    processNext();
+                };
+
+                processNext();
+            };
+        }
+
+        function selectThumbnail(idx) {
+            state.selectedThumbnailIndex = idx;
+            state.snapshotBase64 = state.thumbnails[idx];
+            elements.selectedThumbnailImg.src = state.snapshotBase64;
+
+            const imgs = elements.thumbnailGallery.querySelectorAll('img');
+            imgs.forEach((img, i) => {
+                if (i === idx) {
+                    img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-brand-500 scale-105 shadow';
+                } else {
+                    img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-slate-800 opacity-70 hover:opacity-100';
+                }
+            });
+        }
+
+        // Step 2: Gemini AI Inspection with Fallback Engine
+        async function startAiInspection() {
+            if (!state.selectedFile) {
+                showToast('Pilih video terlebih dahulu!', 'error');
+                return;
+            }
+            if (!state.geminiApiKey) {
+                showToast('Masukkan Gemini API Key di menu Pengaturan!', 'error');
+                toggleSettingsPanel();
+                return;
+            }
+
+            switchStep(2);
+            showToast('AI sedang mengekstrak & menganalisis frame video...', 'info');
+
+            const prompt = `Analisis gambar snapshot frame video ini. 
+Hasilkan metadata YouTube lengkap format JSON murni:
+{
+  "title": "Judul mengundang klik SEO (WAJIB masukkan #shorts di awal/akhir dan 1 hashtag tren relevan. Max 100 char)",
+  "description": "Deskripsi lengkap menarik SEO friendly dengan poin-poin stempel waktu & hashtag",
+  "tags": "tag1, tag2, tag3, tag4, tag5, tag6",
+  "suggestedFilename": "seo-slug-filename-video.mp4"
+}`;
+
+            const fallbackModels = [state.selectedGeminiModel, 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+            const uniqueModels = [...new Set(fallbackModels)];
+
+            let success = false;
+            for (const modelName of uniqueModels) {
+                try {
+                    const cleanBase64 = state.snapshotBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '');
+                    const reqBody = {
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
+                            ]
+                        }],
+                        generationConfig: { responseMimeType: 'application/json' }
+                    };
+
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.geminiApiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reqBody)
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        console.warn(`Model ${modelName} failed:`, errText);
+                        continue;
+                    }
+
+                    const resData = await response.json();
+                    const textContent = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!textContent) continue;
+
+                    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+                    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : textContent);
+
+                    state.aiResults = parsed;
+                    elements.inputAiTitle.value = parsed.title || '';
+                    elements.inputAiDescription.value = parsed.description || '';
+                    elements.inputAiTags.value = parsed.tags || '';
+                    elements.inputRenamedFilename.value = parsed.suggestedFilename || 'video-ter-rename.mp4';
+                    
+                    updateCharCount();
+                    success = true;
+                    showToast(`Inspeksi berhasil via model ${modelName}!`, 'success');
+                    break;
+
+                } catch (err) {
+                    console.warn(`Error trying ${modelName}:`, err);
+                }
+            }
+
+            if (!success) {
+                showToast('Gagal AI Inspeksi: Semua model Gemini sibuk/limit. Coba lagi dalam 10 detik.', 'error');
+            }
+        }
+
+        function updateCharCount() {
+            const len = elements.inputAiTitle.value.length;
+            elements.titleCharCount.textContent = `${len}/100`;
+        }
+
+        function downloadRenamedVideo() {
+            if (!state.selectedFile) return;
+            const newName = elements.inputRenamedFilename.value.trim() || 'video-rename.mp4';
+            const blobUrl = URL.createObjectURL(state.selectedFile);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = newName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast(`Mengunduh berkas sebagai ${newName}`, 'success');
+        }
+
+        function proceedToStep3() {
+            const productTag = elements.inputProductTag.value.trim();
+            if (productTag && !elements.inputAiDescription.value.includes(productTag)) {
+                elements.inputAiDescription.value += `\n\n📌 Tag Produk / Link Afiliasi:\n${productTag}`;
+            }
+            switchStep(3);
+        }
+
+        // Multi-Channel OAuth Logic
+        function loadConnectedChannels() {
+            try {
+                const saved = localStorage.getItem('yt_automator_channels');
+                state.connectedChannels = saved ? JSON.parse(saved) : [];
+                state.activeChannelId = localStorage.getItem('yt_automator_active_channel_id') || null;
+            } catch (e) {
+                state.connectedChannels = [];
+            }
+            renderChannelDropdown();
+        }
+
+        function saveConnectedChannels() {
+            localStorage.setItem('yt_automator_channels', JSON.stringify(state.connectedChannels));
+            if (state.activeChannelId) {
+                localStorage.setItem('yt_automator_active_channel_id', state.activeChannelId);
+            }
+        }
+
+        function renderChannelDropdown() {
+            if (!elements.selectChannelAccount) return;
+            elements.selectChannelAccount.innerHTML = '';
+
+            if (state.connectedChannels.length === 0) {
+                elements.selectChannelAccount.innerHTML = `<option value="">-- Belum ada channel terhubung. Klik "+ Tambah Akun" --</option>`;
+                if (elements.oauthUserStatusText) {
+                    elements.oauthUserStatusText.textContent = 'Belum Terkoneksi OAuth';
+                    elements.oauthUserStatusText.className = 'text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20';
+                }
+                return;
+            }
+
+            state.connectedChannels.forEach(ch => {
+                const isSel = ch.id === state.activeChannelId ? 'selected' : '';
+                elements.selectChannelAccount.innerHTML += `<option value="${ch.id}" ${isSel}>${ch.title} (${ch.email || 'YouTube Channel'})</option>`;
+            });
+
+            const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId) || state.connectedChannels[0];
+            if (activeCh) {
+                state.activeChannelId = activeCh.id;
+                state.googleAccessToken = activeCh.token;
+                if (elements.oauthUserStatusText) {
+                    elements.oauthUserStatusText.textContent = `Terhubung: ${activeCh.title}`;
+                    elements.oauthUserStatusText.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
+                }
+            }
+        }
+
+        function handleChannelSelectChange() {
+            const selId = elements.selectChannelAccount.value;
+            const ch = state.connectedChannels.find(c => c.id === selId);
+            if (ch) {
+                state.activeChannelId = ch.id;
+                state.googleAccessToken = ch.token;
+                saveConnectedChannels();
+                showToast(`Channel aktif diubah ke: ${ch.title}`, 'info');
+                fetchLiveChannelVideos(ch);
+            }
+        }
+
+        function fetchCurrentChannelLiveVideos() {
+            const ch = state.connectedChannels.find(c => c.id === state.activeChannelId);
+            if (ch) {
+                fetchLiveChannelVideos(ch);
+            } else {
+                showToast('Login Google OAuth terlebih dahulu untuk sync live YouTube!', 'error');
+            }
+        }
+
+        function startGoogleOAuthLogin() {
+            if (!state.oauthClientId) {
+                showToast('Masukkan Google Client ID di menu Pengaturan!', 'error');
+                toggleSettingsPanel();
+                return;
+            }
+
+            const redirectUri = window.location.origin + window.location.pathname;
+            const scope = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly';
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(state.oauthClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+
+            window.location.href = authUrl;
+        }
+
+        function checkOAuthHashRedirect() {
+            const hash = window.location.hash;
+            if (hash.includes('access_token=')) {
+                const params = new URLSearchParams(hash.substring(1));
+                const token = params.get('access_token');
+                if (token) {
+                    window.location.hash = '';
+                    fetchChannelProfile(token);
+                }
+            }
+        }
+
+        async function fetchChannelProfile(token) {
+            try {
+                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Gagal mengambil data profil channel');
+                const data = await res.json();
+                const item = data.items?.[0];
+                if (item) {
+                    const channelObj = {
+                        id: item.id,
+                        title: item.snippet.title,
+                        thumbnail: item.snippet.thumbnails?.default?.url,
+                        uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads,
+                        token: token
+                    };
+
+                    const existingIdx = state.connectedChannels.findIndex(c => c.id === item.id);
+                    if (existingIdx >= 0) {
+                        state.connectedChannels[existingIdx] = channelObj;
+                    } else {
+                        state.connectedChannels.push(channelObj);
+                    }
+
+                    state.activeChannelId = item.id;
+                    state.googleAccessToken = token;
+                    saveConnectedChannels();
+                    renderChannelDropdown();
+                    showToast(`Berhasil login channel: ${channelObj.title}`, 'success');
+                    fetchLiveChannelVideos(channelObj);
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function toggleScheduleDatePicker() {
+            const priv = elements.uploadPrivacy.value;
+            const schedContainer = document.getElementById('schedule-date-container');
+            if (priv === 'scheduled') {
+                schedContainer.classList.remove('hidden');
+                if (!elements.uploadPublishAt.value) {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(18, 0, 0, 0);
+                    elements.uploadPublishAt.value = tomorrow.toISOString().slice(0, 16);
+                }
+            } else {
+                schedContainer.classList.add('hidden');
+            }
+        }
+
+        // Resumable YouTube Video Upload
+        async function startYouTubeUpload() {
+            if (!state.selectedFile) {
+                showToast('Pilih file video!', 'error');
+                return;
+            }
+            if (!state.googleAccessToken) {
+                showToast('Login Google OAuth terlebih dahulu!', 'error');
+                return;
+            }
+
+            elements.uploadProgressContainer.classList.remove('hidden');
+            elements.uploadProgressBar.style.width = '0%';
+            elements.uploadPercentage.textContent = '0%';
+
+            const title = elements.inputAiTitle.value.trim() || 'Untitled Video';
+            const description = elements.inputAiDescription.value.trim() || '';
+            const tags = elements.inputAiTags.value.split(',').map(t => t.trim()).filter(Boolean);
+            const privacy = elements.uploadPrivacy.value;
+            const categoryId = elements.uploadCategoryId.value;
+            const madeForKids = elements.uploadMadeForKids.value === 'true';
+
+            const metadata = {
+                snippet: { title, description, tags, categoryId },
+                status: {
+                    privacyStatus: privacy === 'scheduled' ? 'private' : privacy,
+                    selfDeclaredMadeForKids: madeForKids
+                }
+            };
+
+            if (privacy === 'scheduled' && elements.uploadPublishAt.value) {
+                metadata.status.publishAt = new Date(elements.uploadPublishAt.value).toISOString();
+            }
+
+            try {
+                // Initial Resumable Session Request
+                const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.googleAccessToken}`,
+                        'Content-Type': 'application/json',
+                        'X-Upload-Content-Length': state.selectedFile.size,
+                        'X-Upload-Content-Type': state.selectedFile.type
+                    },
+                    body: JSON.stringify(metadata)
+                });
+
+                if (!initRes.ok) throw new Error(`Init Upload Gagal: ${initRes.statusText}`);
+
+                const uploadUrl = initRes.headers.get('Location');
+                if (!uploadUrl) throw new Error('Location header tidak ditemukan');
+
+                // Upload File Binary via XHR Progress
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', uploadUrl, true);
+                xhr.setRequestHeader('Content-Type', state.selectedFile.type);
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        elements.uploadProgressBar.style.width = percent + '%';
+                        elements.uploadPercentage.textContent = percent + '%';
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        const resJson = JSON.parse(xhr.responseText);
+                        showToast('Video berhasil diunggah ke YouTube!', 'success');
+
+                        const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+                        saveVideoToHistory({
+                            id: resJson.id,
+                            title: title,
+                            filename: state.renamedFile ? state.renamedFile.name : state.selectedFile.name,
+                            isShort: title.toLowerCase().includes('#shorts'),
+                            privacy: privacy,
+                            publishAt: metadata.status.publishAt || null,
+                            uploadDate: new Date().toISOString(),
+                            channelId: state.activeChannelId,
+                            channelTitle: activeCh ? activeCh.title : 'YouTube',
+                            thumbnail: state.snapshotBase64
+                        });
+
+                        resetUploadWorkflow();
+                        switchStep(4);
+                    } else {
+                        showToast(`Upload gagal: HTTP ${xhr.status}`, 'error');
+                    }
+                };
+
+                xhr.onerror = () => showToast('Kesalahan jaringan saat upload.', 'error');
+                xhr.send(state.selectedFile);
+
+            } catch (err) {
+                showToast(`Gagal: ${err.message}`, 'error');
+            }
+        }
+
+        function resetUploadWorkflow() {
+            state.selectedFile = null;
+            state.renamedFile = null;
+            elements.videoPreviewCard.classList.add('hidden');
+            elements.inputAiTitle.value = '';
+            elements.inputAiDescription.value = '';
+            elements.inputAiTags.value = '';
+            elements.inputProductTag.value = '';
+            elements.uploadProgressContainer.classList.add('hidden');
+        }
+
+        // Helper Toast Notification
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800 border border-slate-700';
+            toast.className = `${bg} text-white text-xs font-medium px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between gap-3 animate-slide-up pointer-events-auto`;
+            toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" class="text-white/70 hover:text-white"><i class="fa-solid fa-xmark"></i></button>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Modal Instructions Trigger
+        function openGuideModal() { document.getElementById('modal-guide').classList.remove('hidden'); }
+        function closeGuideModal() { document.getElementById('modal-guide').classList.add('hidden'); }
+
+        // Filter Modal & YouTube Studio Collection Functions
+        function openYtFilterModal() {
+            const modal = document.getElementById('modal-yt-filter');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeYtFilterModal() {
+            const modal = document.getElementById('modal-yt-filter');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function applyYtFilterModal() {
+            const sortRadio = document.querySelector('input[name="filter_sort_by"]:checked');
+            if (sortRadio) state.filterConfig.sortBy = sortRadio.value;
+
+            const visBoxes = document.querySelectorAll('input[name="filter_vis"]:checked');
+            state.filterConfig.visibility = Array.from(visBoxes).map(b => b.value);
+
+            const viewsVal = document.getElementById('filter-views-val');
+            if (viewsVal && viewsVal.value !== '') {
+                state.filterConfig.viewsValue = parseInt(viewsVal.value, 10);
+                const viewsCondRadio = document.querySelector('input[name="filter_views_cond"]:checked');
+                state.filterConfig.viewsCondition = viewsCondRadio ? viewsCondRadio.value : 'greater';
+            } else {
+                state.filterConfig.viewsValue = null;
+            }
+
+            closeYtFilterModal();
+            renderVideoHistory();
+        }
+
+        function resetAllFilters() {
+            state.filterConfig = {
+                sortBy: 'newest',
+                visibility: [],
+                viewsCondition: 'greater',
+                viewsValue: null
+            };
+            const viewsVal = document.getElementById('filter-views-val');
+            if (viewsVal) viewsVal.value = '';
+            const visBoxes = document.querySelectorAll('input[name="filter_vis"]');
+            visBoxes.forEach(b => b.checked = false);
+            const sortDefault = document.querySelector('input[name="filter_sort_by"][value="newest"]');
+            if (sortDefault) sortDefault.checked = true;
+
+            renderVideoHistory();
+        }
+
+        function quickFilterSort(sortBy) {
+            state.filterConfig.sortBy = sortBy;
+            renderVideoHistory();
+        }
+
+        function quickFilterVisibility(vis) {
+            if (state.filterConfig.visibility.includes(vis)) {
+                state.filterConfig.visibility = state.filterConfig.visibility.filter(v => v !== vis);
+            } else {
+                state.filterConfig.visibility.push(vis);
+            }
+            renderVideoHistory();
+        }
+
+        function saveVideoToHistory(videoObj) {
+            try {
+                let history = JSON.parse(localStorage.getItem('yt_automator_history') || '[]');
+                history.unshift(videoObj);
+                localStorage.setItem('yt_automator_history', JSON.stringify(history));
+                state.videoHistory = history;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function fetchLiveChannelVideos(channelObj) {
+            if (!channelObj || !channelObj.token) return;
+            showToast('Mengambil data video YouTube...', 'info');
+            try {
+                let allItems = [];
+                let pageToken = '';
+                const playlistId = channelObj.uploadsPlaylistId;
+                if (!playlistId) return;
+
+                do {
+                    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,status,contentDetails&playlistId=${playlistId}&maxResults=50${pageToken ? '&pageToken=' + pageToken : ''}`;
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${channelObj.token}` }
+                    });
+                    if (!res.ok) break;
+                    const data = await res.json();
+                    if (data.items) {
+                        allItems = allItems.concat(data.items);
+                    }
+                    pageToken = data.nextPageToken || '';
+                } while (pageToken && allItems.length < 200);
+
+                if (allItems.length > 0) {
+                    const videoIds = allItems.map(i => i.contentDetails.videoId).join(',');
+                    const statsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,status,snippet&id=${videoIds}`, {
+                        headers: { 'Authorization': `Bearer ${channelObj.token}` }
+                    });
+                    if (statsRes.ok) {
+                        const statsData = await statsRes.json();
+                        const statsMap = {};
+                        (statsData.items || []).forEach(v => { statsMap[v.id] = v; });
+
+                        state.liveChannelVideos = allItems.map(item => {
+                            const vidId = item.contentDetails.videoId;
+                            const fullData = statsMap[vidId] || {};
+                            const status = fullData.status || item.status || {};
+                            const snippet = fullData.snippet || item.snippet || {};
+                            const stats = fullData.statistics || {};
+
+                            return {
+                                id: vidId,
+                                title: snippet.title || 'Untitled',
+                                description: snippet.description || '',
+                                thumbnail: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || '',
+                                privacy: status.privacyStatus || 'public',
+                                publishAt: status.publishAt || snippet.publishedAt,
+                                uploadDate: snippet.publishedAt,
+                                isShort: (snippet.title || '').toLowerCase().includes('#shorts'),
+                                channelTitle: channelObj.title,
+                                viewCount: parseInt(stats.viewCount || '0', 10),
+                                likeCount: parseInt(stats.likeCount || '0', 10),
+                                commentCount: parseInt(stats.commentCount || '0', 10)
+                            };
+                        });
+                        showToast(`Berhasil memuat ${state.liveChannelVideos.length} video dari YouTube!`, 'success');
+                        renderVideoHistory();
+                    }
+                }
+            } catch (err) {
+                console.error('Fetch live videos error:', err);
+                showToast('Gagal memuat video live dari YouTube', 'error');
+            }
+        }
+
+        function renderVideoHistory() {
+            let history = [];
+            try {
+                history = JSON.parse(localStorage.getItem('yt_automator_history') || '[]');
+            } catch (e) { history = []; }
+
+            let combined = [...state.liveChannelVideos];
+            history.forEach(h => {
+                if (!combined.some(v => v.id === h.id)) {
+                    combined.push(h);
+                }
+            });
+
+            // Filter
+            if (state.filterConfig.visibility.length > 0) {
+                combined = combined.filter(v => state.filterConfig.visibility.includes(v.privacy));
+            }
+            if (state.filterConfig.viewsValue !== null) {
+                combined = combined.filter(v => {
+                    const views = v.viewCount || 0;
+                    return state.filterConfig.viewsCondition === 'greater'
+                        ? views >= state.filterConfig.viewsValue
+                        : views <= state.filterConfig.viewsValue;
+                });
+            }
+
+            // Sort
+            if (state.filterConfig.sortBy === 'most_viewed') {
+                combined.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+            } else {
+                combined.sort((a, b) => new Date(b.publishAt || b.uploadDate) - new Date(a.publishAt || a.uploadDate));
+            }
+
+            // Update stats
+            const total = combined.length;
+            const shorts = combined.filter(v => v.isShort).length;
+            const regular = total - shorts;
+            const scheduled = combined.filter(v => v.privacy === 'scheduled' || (v.publishAt && new Date(v.publishAt) > new Date())).length;
+
+            if (elements.statTotalCount) elements.statTotalCount.textContent = total;
+            if (elements.statShortsCount) elements.statShortsCount.textContent = shorts;
+            if (elements.statVideosCount) elements.statVideosCount.textContent = regular;
+            if (elements.statScheduledCount) elements.statScheduledCount.textContent = scheduled;
+
+            const activeChips = document.getElementById('active-filter-chips');
+            const activeTagsBar = document.getElementById('active-filter-tags');
+            if (activeChips && activeTagsBar) {
+                activeChips.innerHTML = '';
+                let filterCount = 0;
+                if (state.filterConfig.sortBy !== 'newest') {
+                    activeChips.innerHTML += `<span class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-md border border-slate-700">Urut: Paling Banyak Ditonton</span>`;
+                    filterCount++;
+                }
+                if (state.filterConfig.visibility.length > 0) {
+                    activeChips.innerHTML += `<span class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-md border border-slate-700">Visibilitas: ${state.filterConfig.visibility.join(', ')}</span>`;
+                    filterCount++;
+                }
+                if (state.filterConfig.viewsValue !== null) {
+                    activeChips.innerHTML += `<span class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-md border border-slate-700">Penayangan ${state.filterConfig.viewsCondition === 'greater' ? '>' : '<'} ${state.filterConfig.viewsValue}</span>`;
+                    filterCount++;
+                }
+                if (filterCount > 0) activeTagsBar.classList.remove('hidden');
+                else activeTagsBar.classList.add('hidden');
+            }
+
+            if (!elements.historyVerticalContainer || !elements.historyEmptyState) return;
+
+            if (combined.length === 0) {
+                elements.historyEmptyState.classList.remove('hidden');
+                elements.historyVerticalContainer.classList.add('hidden');
+            } else {
+                elements.historyEmptyState.classList.add('hidden');
+                elements.historyVerticalContainer.classList.remove('hidden');
+                elements.historyVerticalContainer.innerHTML = '';
+
+                combined.forEach(item => {
+                    const isScheduled = item.privacy === 'scheduled' || (item.publishAt && new Date(item.publishAt) > new Date());
+                    const pubDate = new Date(item.publishAt || item.uploadDate);
+                    const formattedDate = pubDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ', ' + pubDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition shadow flex flex-col justify-between';
+                    
+                    card.innerHTML = `
+                        <div class="relative aspect-video bg-black">
+                            <img src="${item.thumbnail || 'https://placehold.co/600x337/1e293b/94a3b8?text=YT+Video'}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x337/1e293b/94a3b8?text=No+Thumbnail'">
+                            <div class="absolute top-2 left-2 flex gap-1">
+                                ${item.isShort ? '<span class="bg-red-600 text-white text-[10px] font-black uppercase px-1.5 py-0.5 rounded">Shorts</span>' : ''}
+                                ${isScheduled ? '<span class="bg-amber-500/90 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded shadow flex items-center gap-1"><i class="fa-solid fa-clock"></i> Dijadwalkan</span>' : '<span class="bg-emerald-600/90 text-white font-bold text-[10px] px-2 py-0.5 rounded shadow flex items-center gap-1"><i class="fa-solid fa-globe"></i> Publik</span>'}
+                            </div>
+                        </div>
+                        <div class="p-3 space-y-2 flex-1 flex flex-col justify-between text-xs">
+                            <div>
+                                <h4 class="font-bold text-slate-100 line-clamp-2 leading-snug">${item.title}</h4>
+                                <p class="text-[11px] text-slate-400 mt-1">${formattedDate}</p>
+                            </div>
+                            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-slate-400 text-[11px]">
+                                ${!isScheduled ? `
+                                    <div class="flex items-center gap-3">
+                                        <span title="Penayangan"><i class="fa-solid fa-chart-simple text-brand-400"></i> ${item.viewCount || 0}</span>
+                                        <span title="Suka"><i class="fa-regular fa-thumbs-up text-blue-400"></i> ${item.likeCount || 0}</span>
+                                        <span title="Komentar"><i class="fa-regular fa-comment text-emerald-400"></i> ${item.commentCount || 0}</span>
+                                    </div>
+                                ` : `
+                                    <span class="text-amber-400 font-medium"><i class="fa-solid fa-clock mr-1"></i> Akan tayang</span>
+                                `}
+                                <a href="https://youtu.be/${item.id}" target="_blank" class="text-brand-400 hover:text-brand-300 font-medium">Tonton <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                            </div>
+                        </div>
+                    `;
+
+                    elements.historyVerticalContainer.appendChild(card);
+                });
+            }
+        }
+
+        function setupEventListeners() {
+            const btnFilter = document.getElementById('btn-open-yt-filter');
+            if (btnFilter) {
+                btnFilter.onclick = openYtFilterModal;
+            }
+        }
+
+        // Application Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initDOM();
+            loadSettings();
+            loadConnectedChannels();
+            checkOAuthHashRedirect();
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>
