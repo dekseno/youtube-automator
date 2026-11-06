@@ -105,7 +105,7 @@
                     </button>
                 </div>
 
-                <button id="btn-open-login-modal" onclick="openLoginModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5">
+                <button id="btn-open-login-modal" onclick="openLoginModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-user-lock"></i>
                     <span>Login Member</span>
                 </button>
@@ -642,6 +642,79 @@
 
     <!-- YouTube Studio Filter Modal Sheet -->
     <div id="modal-yt-filter" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-400"></i> Filter & Urutkan Konten
+                </h3>
+                <button onclick="closeYtFilterModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Sorting -->
+                <div class="space-y-2">
+                    <label class="block font-bold text-slate-200">Urutkan Menurut</label>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="filter_sort_by" value="newest" checked class="accent-brand-500">
+                            <span>Terbaru (default)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="filter_sort_by" value="most_viewed" class="accent-brand-500">
+                            <span>Paling Banyak Ditonton</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Visibilitas -->
+                <div class="space-y-2 border-t border-slate-800 pt-3">
+                    <label class="block font-bold text-slate-200">Visibilitas</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="public" class="accent-brand-500">
+                            <span>Publik</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="scheduled" class="accent-brand-500">
+                            <span>Terjadwal</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="private" class="accent-brand-500">
+                            <span>Pribadi</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="filter_vis" value="unlisted" class="accent-brand-500">
+                            <span>Tidak Publik</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Penayangan -->
+                <div class="space-y-2 border-t border-slate-800 pt-3">
+                    <label class="block font-bold text-slate-200">Penayangan (Views)</label>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="filter_views_cond" value="greater" checked class="accent-brand-500">
+                            <span>Lebih dari</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="filter_views_cond" value="less" class="accent-brand-500">
+                            <span>Kurang dari</span>
+                        </label>
+                    </div>
+                    <input type="number" id="filter-views-val" placeholder="Masukkan jumlah views" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex justify-between gap-2">
+                <button onclick="resetAllFilters()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700">Reset</button>
+                <button onclick="applyYtFilterModal()" class="px-6 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow">Terapkan Filter</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Supabase Login / Membership Modal -->
     <div id="modal-supabase-auth" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative animate-slide-up">
@@ -666,7 +739,7 @@
                     <label class="font-medium text-slate-300">Password</label>
                     <input type="password" id="auth-input-password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
-                <button onclick="handleSupabaseLogin()" id="btn-submit-auth" class="w-full py-2.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2">
+                <button onclick="handleSupabaseLogin()" id="btn-submit-auth" class="w-full py-2.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     <span>Masuk Akun Member</span>
                 </button>
@@ -722,6 +795,16 @@
 
         const elements = {};
 
+        // Helper Modal Open & Close
+        function openLoginModal() {
+            const m = document.getElementById('modal-supabase-auth');
+            if (m) m.classList.remove('hidden');
+        }
+        function closeLoginModal() {
+            const m = document.getElementById('modal-supabase-auth');
+            if (m) m.classList.add('hidden');
+        }
+
         // Supabase Client & Authentication Handlers
         function initSupabaseClient() {
             state.supabase.url = localStorage.getItem('yt_automator_sb_url') || '';
@@ -740,15 +823,6 @@
                     console.error('Supabase init error:', e);
                 }
             }
-        }
-
-        function openLoginModal() {
-            const m = document.getElementById('modal-supabase-auth');
-            if (m) m.classList.remove('hidden');
-        }
-        function closeLoginModal() {
-            const m = document.getElementById('modal-supabase-auth');
-            if (m) m.classList.add('hidden');
         }
 
         async function handleSupabaseLogin() {
@@ -988,6 +1062,14 @@
             renderVideoHistory();
         }
 
+        function getEffectiveVisibility(videoItem) {
+            const priv = videoItem.privacy || 'public';
+            if (priv === 'private' && videoItem.publishAt && new Date(videoItem.publishAt) > new Date()) {
+                return 'scheduled';
+            }
+            return priv;
+        }
+
         // Google Identity Services (GIS) Token Client Initialization
         function initGisTokenClient() {
             if (!state.oauthClientId) return;
@@ -1075,7 +1157,10 @@
         async function verifyAndRefreshActiveOAuthToken() {
             const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
             if (!activeCh || !activeCh.token) {
-                showToast('Belum ada channel terhubung! Silakan login via GIS Popup.', 'error');
+                if (elements.oauthUserStatusText) {
+                    elements.oauthUserStatusText.textContent = 'Belum Terkoneksi OAuth';
+                    elements.oauthUserStatusText.className = 'text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20';
+                }
                 return false;
             }
 
@@ -1093,7 +1178,6 @@
                     startGoogleOAuthLogin('');
                     return false;
                 }
-                showToast(`Token channel '${activeCh.title}' AKTIF & Valid!`, 'success');
                 if (elements.oauthUserStatusText) {
                     elements.oauthUserStatusText.textContent = `Terkoneksi GIS Verified: ${activeCh.title}`;
                     elements.oauthUserStatusText.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
