@@ -27,6 +27,8 @@
     </script>
     <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Google Identity Services (GIS) Client SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Google Fonts: Inter -->
@@ -93,6 +95,21 @@
             </div>
 
             <div class="flex items-center gap-2">
+                <!-- User Auth Badge Status -->
+                <div id="user-auth-badge" class="hidden flex items-center gap-2">
+                    <span id="txt-user-role-badge" class="px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                        <i class="fa-solid fa-crown text-[10px]"></i> <span id="lbl-role-name">VIP Member</span>
+                    </span>
+                    <button onclick="handleUserLogout()" title="Logout Member" class="p-1.5 bg-slate-800 hover:bg-rose-600/20 hover:text-rose-400 text-slate-400 rounded-xl border border-slate-700 transition">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    </button>
+                </div>
+
+                <button id="btn-open-login-modal" onclick="openLoginModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <span>Login Member</span>
+                </button>
+
                 <button id="btn-toggle-settings" onclick="toggleSettingsPanel()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
                     <i class="fa-solid fa-gear text-brand-400"></i>
                     <span id="txt-toggle-settings">Buka Pengaturan API</span>
@@ -200,6 +217,17 @@
                         <option value="false" selected>Tidak dibuat untuk anak-anak</option>
                         <option value="true">Ya, dibuat untuk anak-anak</option>
                     </select>
+                </div>
+
+                <!-- Supabase Config (Optional Admin Setup) -->
+                <div class="space-y-1.5 col-span-1 md:col-span-2 lg:col-span-3 pt-2 border-t border-slate-800/80">
+                    <h4 class="font-bold text-slate-300 text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-database text-emerald-400"></i> Konfigurasi Database Supabase Auth (SaaS Host)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        <input type="text" id="input-supabase-url" placeholder="Supabase URL (https://xyz.supabase.co)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <input type="password" id="input-supabase-key" placeholder="Supabase Anon Key" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
                 </div>
             </div>
 
@@ -614,80 +642,40 @@
 
     <!-- YouTube Studio Filter Modal Sheet -->
     <div id="modal-yt-filter" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900 sticky top-0 z-10">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-brand-500"></i>
-                    <h3 class="font-bold text-slate-100 text-base">Filter Konten</h3>
+    <!-- Supabase Login / Membership Modal -->
+    <div id="modal-supabase-auth" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative animate-slide-up">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center space-y-1.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-pink-600 text-white flex items-center justify-center mx-auto text-xl shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-user-shield"></i>
                 </div>
-                <button onclick="closeYtFilterModal()" class="text-slate-400 hover:text-white p-1">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <h3 class="font-bold text-base text-slate-100">Login Member Automator</h3>
+                <p class="text-xs text-slate-400">Masukkan Username / Email & Password akun Anda</p>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div class="space-y-1">
+                    <label class="font-medium text-slate-300">Username / Email Member</label>
+                    <input type="text" id="auth-input-email" placeholder="user@domain.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="space-y-1">
+                    <label class="font-medium text-slate-300">Password</label>
+                    <input type="password" id="auth-input-password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                </div>
+                <button onclick="handleSupabaseLogin()" id="btn-submit-auth" class="w-full py-2.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Masuk Akun Member</span>
                 </button>
             </div>
-            
-            <div class="p-5 overflow-y-auto space-y-6 text-xs text-slate-200">
-                <!-- Urutkan menurut -->
-                <div class="space-y-2">
-                    <h4 class="font-bold text-slate-100 text-sm">Urutkan menurut</h4>
-                    <div class="space-y-2 pl-1">
-                        <label class="flex items-center gap-2.5 cursor-pointer">
-                            <input type="radio" name="filter_sort_by" value="newest" checked class="accent-brand-500">
-                            <span>Terbaru (default)</span>
-                        </label>
-                        <label class="flex items-center gap-2.5 cursor-pointer">
-                            <input type="radio" name="filter_sort_by" value="most_viewed" class="accent-brand-500">
-                            <span>Paling banyak ditonton</span>
-                        </label>
-                    </div>
-                </div>
 
-                <hr class="border-slate-800">
-
-                <!-- Visibilitas -->
-                <div class="space-y-2">
-                    <h4 class="font-bold text-slate-100 text-sm">Visibilitas</h4>
-                    <div class="grid grid-cols-2 gap-2.5 pl-1">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="public" class="rounded accent-brand-500">
-                            <span>Publik</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="private" class="rounded accent-brand-500">
-                            <span>Pribadi</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="unlisted" class="rounded accent-brand-500">
-                            <span>Tidak publik</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="scheduled" class="rounded accent-brand-500">
-                            <span>Terjadwal</span>
-                        </label>
-                    </div>
-                </div>
-
-                <hr class="border-slate-800">
-
-                <!-- Penayangan -->
-                <div class="space-y-2.5">
-                    <h4 class="font-bold text-slate-100 text-sm">Penayangan</h4>
-                    <div class="flex gap-4 pl-1">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="filter_views_cond" value="greater" checked class="accent-brand-500">
-                            <span>Lebih dari</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="filter_views_cond" value="less" class="accent-brand-500">
-                            <span>Kurang dari</span>
-                        </label>
-                    </div>
-                    <input type="number" id="filter-views-val" placeholder="Masukkan angka" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
-                </div>
-            </div>
-
-            <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-                <button onclick="applyYtFilterModal()" class="w-full py-2.5 bg-slate-200 hover:bg-white text-slate-900 rounded-xl text-xs font-bold transition shadow">
-                    Terapkan
+            <div class="pt-3 border-t border-slate-800 text-center text-[11px] text-slate-400 space-y-1">
+                <p>Belum punya akun lisensi?</p>
+                <button onclick="showToast('Silakan hubungi admin / tempat pembelian lisensi Anda untuk mendapatkan Username & Password.', 'info')" class="text-brand-400 hover:underline font-bold">
+                    Hubungi Admin / Beli Lisensi
                 </button>
             </div>
         </div>
@@ -721,19 +709,169 @@
                 viewsCondition: 'greater',
                 viewsValue: null,
                 selectedChannelId: 'all'
+            },
+            supabase: {
+                url: '',
+                key: '',
+                client: null,
+                currentUser: null,
+                role: 'guest',
+                expiredAt: null
             }
         };
 
         const elements = {};
 
-        // Helper: Determine effective visibility status (Handles YouTube API 'private' with future 'publishAt')
-        function getEffectiveVisibility(v) {
-            if (!v) return 'public';
-            const isFuture = v.publishAt && new Date(v.publishAt) > new Date();
-            if (v.privacy === 'scheduled' || isFuture) {
-                return 'scheduled';
+        // Supabase Client & Authentication Handlers
+        function initSupabaseClient() {
+            state.supabase.url = localStorage.getItem('yt_automator_sb_url') || '';
+            state.supabase.key = localStorage.getItem('yt_automator_sb_key') || '';
+
+            const inputUrl = document.getElementById('input-supabase-url');
+            const inputKey = document.getElementById('input-supabase-key');
+            if (inputUrl) inputUrl.value = state.supabase.url;
+            if (inputKey) inputKey.value = state.supabase.key;
+
+            if (state.supabase.url && state.supabase.key && typeof supabase !== 'undefined') {
+                try {
+                    state.supabase.client = supabase.createClient(state.supabase.url, state.supabase.key);
+                    checkExistingUserSession();
+                } catch (e) {
+                    console.error('Supabase init error:', e);
+                }
             }
-            return v.privacy || 'public';
+        }
+
+        function openLoginModal() {
+            const m = document.getElementById('modal-supabase-auth');
+            if (m) m.classList.remove('hidden');
+        }
+        function closeLoginModal() {
+            const m = document.getElementById('modal-supabase-auth');
+            if (m) m.classList.add('hidden');
+        }
+
+        async function handleSupabaseLogin() {
+            const emailInput = document.getElementById('auth-input-email');
+            const passInput = document.getElementById('auth-input-password');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const password = passInput ? passInput.value : '';
+
+            if (!email || !password) {
+                showToast('Masukkan email / username dan password!', 'error');
+                return;
+            }
+
+            if (!state.supabase.client) {
+                // Mock Local Demo Auth jika Supabase belum disetup admin
+                if (email === 'vip' || email.includes('vip')) {
+                    applyUserPermissions('vip', new Date(Date.now() + 30 * 86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('🎉 Login Berhasil! Status: VIP MEMBER (Demo)', 'success');
+                    return;
+                } else if (email === 'standard' || email.includes('std')) {
+                    applyUserPermissions('standard', new Date(Date.now() + 30 * 86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login Berhasil! Status: STANDARD MEMBER (Demo)', 'success');
+                    return;
+                }
+                showToast('Supabase Client belum dikonfigurasi. Gunakan username "vip" atau "standard" untuk demo mode.', 'info');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btn-submit-auth');
+            if (btnSubmit) btnSubmit.disabled = true;
+
+            try {
+                const { data, error } = await state.supabase.client.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                const user = data.user;
+                const { data: profile } = await state.supabase.client
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                const role = profile?.role || 'standard';
+                const expiredAt = profile?.expired_at || new Date(Date.now() + 30 * 86400000).toISOString();
+
+                if (new Date(expiredAt) < new Date()) {
+                    showToast('Masa aktif lisensi akun Anda telah habis! Silakan perpanjang.', 'error');
+                    if (btnSubmit) btnSubmit.disabled = false;
+                    return;
+                }
+
+                applyUserPermissions(role, expiredAt, user.email);
+                closeLoginModal();
+                showToast(`🎉 Login Berhasil! Selamat datang, ${user.email}`, 'success');
+            } catch (err) {
+                showToast(`Gagal Login: ${err.message}`, 'error');
+            } finally {
+                if (btnSubmit) btnSubmit.disabled = false;
+            }
+        }
+
+        async function checkExistingUserSession() {
+            if (!state.supabase.client) return;
+            try {
+                const { data: { session } } = await state.supabase.client.auth.getSession();
+                if (session && session.user) {
+                    const { data: profile } = await state.supabase.client
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    const role = profile?.role || 'standard';
+                    const expiredAt = profile?.expired_at;
+                    applyUserPermissions(role, expiredAt, session.user.email);
+                }
+            } catch (e) {
+                console.error('Session check error:', e);
+            }
+        }
+
+        function applyUserPermissions(role, expiredAt, identifier) {
+            state.supabase.role = role;
+            state.supabase.expiredAt = expiredAt;
+
+            const badgeContainer = document.getElementById('user-auth-badge');
+            const btnOpenLogin = document.getElementById('btn-open-login-modal');
+            const lblRoleName = document.getElementById('lbl-role-name');
+
+            if (badgeContainer && btnOpenLogin && lblRoleName) {
+                btnOpenLogin.classList.add('hidden');
+                badgeContainer.classList.remove('hidden');
+
+                if (role === 'vip') {
+                    lblRoleName.textContent = 'VIP Member';
+                    lblRoleName.parentElement.className = 'px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1';
+                    if (elements.selectGeminiModel) elements.selectGeminiModel.disabled = false;
+                } else {
+                    lblRoleName.textContent = 'Standard Member';
+                    lblRoleName.parentElement.className = 'px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1';
+                    if (elements.selectGeminiModel) {
+                        elements.selectGeminiModel.value = 'gemini-2.5-flash';
+                    }
+                }
+            }
+            localStorage.setItem('yt_automator_user_role', role);
+        }
+
+        function handleUserLogout() {
+            if (state.supabase.client) {
+                state.supabase.client.auth.signOut();
+            }
+            state.supabase.role = 'guest';
+            localStorage.removeItem('yt_automator_user_role');
+
+            const badgeContainer = document.getElementById('user-auth-badge');
+            const btnOpenLogin = document.getElementById('btn-open-login-modal');
+            if (badgeContainer) badgeContainer.classList.add('hidden');
+            if (btnOpenLogin) btnOpenLogin.classList.remove('hidden');
+
+            showToast('Anda telah keluar dari akun member.', 'info');
         }
 
         // Toast Notification System
@@ -1276,15 +1414,21 @@
             state.defaultCategory = elements.selectDefaultCategory.value;
             state.defaultKids = elements.selectDefaultKids.value;
 
+            const sbUrl = document.getElementById('input-supabase-url')?.value.trim() || '';
+            const sbKey = document.getElementById('input-supabase-key')?.value.trim() || '';
+
             localStorage.setItem('yt_automator_gemini_key', state.geminiApiKey);
             localStorage.setItem('yt_automator_gemini_model', state.selectedGeminiModel);
             localStorage.setItem('yt_automator_oauth_id', state.oauthClientId);
             localStorage.setItem('yt_automator_def_privacy', state.defaultPrivacy);
             localStorage.setItem('yt_automator_def_category', state.defaultCategory);
             localStorage.setItem('yt_automator_def_kids', state.defaultKids);
+            localStorage.setItem('yt_automator_sb_url', sbUrl);
+            localStorage.setItem('yt_automator_sb_key', sbKey);
 
+            initSupabaseClient();
             initGisTokenClient();
-            showToast('Pengaturan berhasil disimpan & GIS Token Client diperbarui!', 'success');
+            showToast('Pengaturan berhasil disimpan & Sistem diperbarui!', 'success');
             toggleSettingsPanel();
         }
 
@@ -1860,6 +2004,7 @@ Catatan Kategori YouTube ID: 17=Olahraga, 24=Hiburan, 22=Blog&Orang, 26=Cara&Gay
         document.addEventListener('DOMContentLoaded', () => {
             initDOM();
             loadSettings();
+            initSupabaseClient();
             loadConnectedChannels();
             setupEventListeners();
         });
