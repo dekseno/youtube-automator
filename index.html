@@ -27,6 +27,8 @@
     </script>
     <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Identity Services (GIS) Client SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -86,7 +88,7 @@
                     <h1 class="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
                         YT Automator <span class="bg-gradient-to-r from-brand-400 to-pink-500 bg-clip-text text-transparent text-xs font-black uppercase px-1.5 py-0.5 rounded border border-brand-500/30">Pro</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & YouTube Multi-Channel Scheduler</p>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & GIS Auto-Refresh Multi-Channel Scheduler</p>
                 </div>
             </div>
 
@@ -114,7 +116,7 @@
                     <i class="fa-solid fa-key text-brand-500"></i>
                     <h2 class="font-bold text-sm text-slate-100">Pengaturan Kunci Akses & Default Upload (BYOK)</h2>
                 </div>
-                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">100% Client-Side & Gratis</span>
+                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">GIS Auto-Refresh Enabled</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
@@ -150,7 +152,7 @@
                     </label>
                     <input type="text" id="input-oauth-client-id" placeholder="12345...apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
                     <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[10px] space-y-1">
-                        <span class="text-slate-400 block font-medium">Salin Redirect URI ini ke Google Cloud Console:</span>
+                        <span class="text-slate-400 block font-medium">Salin JavaScript Origin ini ke Google Cloud Console:</span>
                         <div class="flex items-center justify-between font-mono text-brand-400 bg-slate-900 p-1.5 rounded border border-slate-800">
                             <span id="txt-redirect-uri-display" class="truncate"></span>
                             <button onclick="copyRedirectUriToClipboard()" class="text-slate-300 hover:text-white px-1.5 py-0.5 bg-slate-800 rounded text-[9px] shrink-0 ml-1">Copy</button>
@@ -375,7 +377,7 @@
             </div>
         </div>
 
-        <!-- STEP 3: UPLOAD & SCHEDULING (STRICT OAUTH VERIFICATION) -->
+        <!-- STEP 3: UPLOAD & SCHEDULING (GIS AUTO-REFRESH OAUTH) -->
         <div id="step-3" class="step-content hidden space-y-5">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5 max-w-3xl mx-auto shadow-xl">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -385,21 +387,21 @@
                     <span id="oauth-user-status-text" class="text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">Belum Terkoneksi OAuth</span>
                 </div>
 
-                <!-- Multi-Channel Selector & OAuth Login -->
+                <!-- Multi-Channel Selector & GIS Popup OAuth Login -->
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-300">Pilih Channel YouTube Tujuan</label>
-                            <p class="text-[11px] text-slate-400">Sistem memverifikasi keaktifan koneksi akun secara strict</p>
+                            <p class="text-[11px] text-slate-400">Sistem otomatis memperbarui token via GIS SDK tanpa redirect</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="verifyAndRefreshActiveOAuthToken()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-shield-halved"></i>
-                                <span>Cek Koneksi Token</span>
+                                <span>Silent Auto-Refresh</span>
                             </button>
-                            <button onclick="startGoogleOAuthLogin()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                            <button onclick="startGoogleOAuthLogin('consent')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                                 <i class="fa-brands fa-google text-red-400"></i>
-                                <span>+ Tambah / Re-Konek Channel</span>
+                                <span>+ Tambah / Popup Channel</span>
                             </button>
                         </div>
                     </div>
@@ -598,7 +600,7 @@
                         <li>Buka <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 underline">Google Cloud Console</a>.</li>
                         <li>Aktifkan <b>YouTube Data API v3</b> di bagian <i>APIs & Services</i>.</li>
                         <li>Buat <b>OAuth 2.0 Client ID</b> (Web application).</li>
-                        <li>Tambahkan URL GitHub Pages Anda di <b>Authorized JavaScript origins</b>.</li>
+                        <li>Tambahkan Origin domain Anda di <b>Authorized JavaScript origins</b>.</li>
                     </ol>
                 </div>
             </div>
@@ -702,11 +704,10 @@
             defaultCategory: '17',
             defaultKids: 'false',
             settingsCollapsed: true,
-            googleAccessToken: null,
+            gisTokenClient: null,
             connectedChannels: [],
             activeChannelId: null,
             channelVideosMap: {},
-            videoHistory: [],
             selectedFile: null,
             renamedFile: null,
             thumbnails: [],
@@ -849,90 +850,114 @@
             renderVideoHistory();
         }
 
-        // Google OAuth & Channel Switcher
-        function startGoogleOAuthLogin() {
+        // Google Identity Services (GIS) Token Client Initialization
+        function initGisTokenClient() {
+            if (!state.oauthClientId) return;
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                setTimeout(initGisTokenClient, 500);
+                return;
+            }
+
+            state.gisTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: state.oauthClientId,
+                scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+                callback: async (tokenResponse) => {
+                    if (tokenResponse.error !== undefined) {
+                        showToast(`GIS OAuth Error: ${tokenResponse.error}`, 'error');
+                        return;
+                    }
+
+                    const token = tokenResponse.access_token;
+                    const expiresIn = (parseInt(tokenResponse.expires_in, 10) || 3600) * 1000;
+                    const expiryTimestamp = Date.now() + expiresIn - 60000;
+
+                    showToast('Otentikasi GIS OAuth Berhasil! Mengambil informasi channel YouTube...', 'info');
+
+                    try {
+                        const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const data = await res.json();
+                        const chItem = data.items?.[0];
+                        if (!chItem) throw new Error('Tidak ada channel YouTube ditemukan untuk akun ini.');
+
+                        const channelObj = {
+                            id: chItem.id,
+                            title: chItem.snippet.title,
+                            thumbnail: chItem.snippet.thumbnails?.default?.url || '',
+                            uploadsPlaylistId: chItem.contentDetails?.relatedPlaylists?.uploads || '',
+                            token: token,
+                            tokenExpiry: expiryTimestamp
+                        };
+
+                        const existingIdx = state.connectedChannels.findIndex(c => c.id === channelObj.id);
+                        if (existingIdx >= 0) {
+                            state.connectedChannels[existingIdx] = channelObj;
+                        } else {
+                            state.connectedChannels.push(channelObj);
+                        }
+
+                        state.activeChannelId = channelObj.id;
+                        localStorage.setItem('yt_automator_channels', JSON.stringify(state.connectedChannels));
+                        localStorage.setItem('yt_automator_active_channel_id', state.activeChannelId);
+
+                        renderChannelDropdown();
+                        updateChannelFilterDropdownOptions();
+                        showToast(`Berhasil terhubung dengan channel: ${channelObj.title}`, 'success');
+                        
+                        fetchLiveChannelVideos(channelObj);
+                    } catch (err) {
+                        showToast(`Gagal memuat profil channel YouTube: ${err.message}`, 'error');
+                    }
+                }
+            });
+        }
+
+        // Start GIS OAuth Login / Silent Refresh
+        function startGoogleOAuthLogin(promptMode = 'consent') {
             if (!state.oauthClientId) {
                 showToast('Masukkan Google Client ID terlebih dahulu di menu Pengaturan!', 'error');
                 toggleSettingsPanel();
                 return;
             }
-            const redirectUri = getCleanRedirectUri();
-            const scope = encodeURIComponent('https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly');
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(state.oauthClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${scope}&include_granted_scopes=true&prompt=consent`;
-            window.location.href = authUrl;
-        }
 
-        async function checkOAuthHashRedirect() {
-            const hash = window.location.hash;
-            if (!hash || !hash.includes('access_token')) return;
+            if (!state.gisTokenClient) {
+                initGisTokenClient();
+            }
 
-            const params = new URLSearchParams(hash.substring(1));
-            const token = params.get('access_token');
-            if (!token) return;
-
-            history.replaceState(null, '', window.location.pathname + window.location.search);
-            showToast('Login OAuth berhasil! Mengambil profil channel YouTube...', 'info');
-
-            try {
-                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                const chItem = data.items?.[0];
-                if (!chItem) throw new Error('Tidak ada channel YouTube ditemukan untuk akun ini.');
-
-                const channelObj = {
-                    id: chItem.id,
-                    title: chItem.snippet.title,
-                    thumbnail: chItem.snippet.thumbnails?.default?.url || '',
-                    uploadsPlaylistId: chItem.contentDetails?.relatedPlaylists?.uploads || '',
-                    token: token,
-                    tokenExpiry: Date.now() + 3500000
-                };
-
-                const existingIdx = state.connectedChannels.findIndex(c => c.id === channelObj.id);
-                if (existingIdx >= 0) {
-                    state.connectedChannels[existingIdx] = channelObj;
-                } else {
-                    state.connectedChannels.push(channelObj);
-                }
-
-                state.activeChannelId = channelObj.id;
-                localStorage.setItem('yt_automator_channels', JSON.stringify(state.connectedChannels));
-                localStorage.setItem('yt_automator_active_channel_id', state.activeChannelId);
-
-                renderChannelDropdown();
-                updateChannelFilterDropdownOptions();
-                showToast(`Berhasil terhubung dengan channel: ${channelObj.title}`, 'success');
-                
-                fetchLiveChannelVideos(channelObj);
-            } catch (err) {
-                showToast(`Gagal mendapatkan channel YouTube: ${err.message}`, 'error');
+            if (state.gisTokenClient) {
+                state.gisTokenClient.requestAccessToken({ prompt: promptMode });
+            } else {
+                showToast('SDK Google Identity Services sedang dimuat. Coba beberapa detik lagi.', 'info');
             }
         }
 
-        // Strict Active OAuth Token Verification
+        // Strict Active OAuth Token Verification & GIS Auto Silent-Refresh
         async function verifyAndRefreshActiveOAuthToken() {
             const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
             if (!activeCh || !activeCh.token) {
-                showToast('Belum ada channel terhubung! Silakan login OAuth.', 'error');
+                showToast('Belum ada channel terhubung! Silakan login via GIS Popup.', 'error');
                 return false;
+            }
+
+            const isNearExpiry = !activeCh.tokenExpiry || Date.now() >= activeCh.tokenExpiry;
+
+            if (isNearExpiry) {
+                showToast(`Token channel '${activeCh.title}' mendekati kedaluwarsa. Melakukan Silent Auto-Refresh...`, 'info');
+                startGoogleOAuthLogin('');
             }
 
             try {
                 const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${activeCh.token}`);
                 if (!res.ok) {
-                    showToast(`Koneksi OAuth channel '${activeCh.title}' kedaluwarsa. Silakan Login Ulang!`, 'error');
-                    if (elements.oauthUserStatusText) {
-                        elements.oauthUserStatusText.textContent = `Token Expired: ${activeCh.title} (Re-connect Required)`;
-                        elements.oauthUserStatusText.className = 'text-xs text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20';
-                    }
+                    showToast(`Token channel '${activeCh.title}' kedaluwarsa. Membuka perpanjangan otomatis...`, 'info');
+                    startGoogleOAuthLogin('');
                     return false;
                 }
                 showToast(`Token channel '${activeCh.title}' AKTIF & Valid!`, 'success');
                 if (elements.oauthUserStatusText) {
-                    elements.oauthUserStatusText.textContent = `Terkoneksi Verified: ${activeCh.title}`;
+                    elements.oauthUserStatusText.textContent = `Terkoneksi GIS Verified: ${activeCh.title}`;
                     elements.oauthUserStatusText.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
                 }
                 return true;
@@ -964,7 +989,7 @@
             if (activeCh) {
                 state.activeChannelId = activeCh.id;
                 if (elements.oauthUserStatusText) {
-                    elements.oauthUserStatusText.textContent = `Terkoneksi: ${activeCh.title}`;
+                    elements.oauthUserStatusText.textContent = `Terkoneksi GIS: ${activeCh.title}`;
                     elements.oauthUserStatusText.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
                 }
             }
@@ -976,7 +1001,7 @@
                 localStorage.setItem('yt_automator_active_channel_id', state.activeChannelId);
                 const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
                 if (activeCh && elements.oauthUserStatusText) {
-                    elements.oauthUserStatusText.textContent = `Terkoneksi: ${activeCh.title}`;
+                    elements.oauthUserStatusText.textContent = `Terkoneksi GIS: ${activeCh.title}`;
                 }
                 verifyAndRefreshActiveOAuthToken();
             }
@@ -1015,11 +1040,15 @@
 
             const isTokenValid = await verifyAndRefreshActiveOAuthToken();
             if (!isTokenValid) {
-                showToast('Koneksi OAuth tidak aktif atau expired. Silakan klik + Tambah / Re-Konek Channel!', 'error');
-                return;
+                showToast('Mencoba memperbarui token GIS OAuth...', 'info');
             }
 
             const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
+            if (!activeCh || !activeCh.token) {
+                showToast('Silakan login / re-konek channel YouTube Anda!', 'error');
+                return;
+            }
+
             const title = elements.inputAiTitle ? elements.inputAiTitle.value.trim() : '';
             if (!title) {
                 showToast('Judul video tidak boleh kosong!', 'error');
@@ -1197,14 +1226,7 @@
         }
 
         function getCleanRedirectUri() {
-            let uri = window.location.origin + window.location.pathname;
-            if (uri.endsWith('/index.html')) {
-                uri = uri.slice(0, -10);
-            }
-            if (!uri.endsWith('/')) {
-                uri += '/';
-            }
-            return uri;
+            return window.location.origin;
         }
 
         function copyRedirectUriToClipboard() {
@@ -1215,7 +1237,7 @@
             tempInput.select();
             document.execCommand('copy');
             document.body.removeChild(tempInput);
-            showToast('Redirect URI berhasil disalin ke clipboard!', 'success');
+            showToast('JavaScript Origin URI berhasil disalin!', 'success');
         }
 
         function loadSettings() {
@@ -1243,6 +1265,7 @@
             if (elements.uploadMadeForKids) elements.uploadMadeForKids.value = state.defaultKids;
 
             toggleScheduleDatePicker();
+            initGisTokenClient();
         }
 
         function saveSettings() {
@@ -1260,7 +1283,8 @@
             localStorage.setItem('yt_automator_def_category', state.defaultCategory);
             localStorage.setItem('yt_automator_def_kids', state.defaultKids);
 
-            showToast('Pengaturan berhasil disimpan!', 'success');
+            initGisTokenClient();
+            showToast('Pengaturan berhasil disimpan & GIS Token Client diperbarui!', 'success');
             toggleSettingsPanel();
         }
 
@@ -1445,7 +1469,6 @@ Hasilkan metadata YouTube super SEO & FYP abadi dalam format JSON murni:
 
 Catatan Kategori YouTube ID: 17=Olahraga, 24=Hiburan, 22=Blog&Orang, 26=Cara&Gaya, 20=Game, 25=Berita, 10=Musik, 28=Sains&Teknologi, 23=Komedi, 1=Film.`;
 
-            // Prepare multimodal parts with all extracted 5 frames
             const imageParts = state.thumbnails.map(base64 => {
                 const cleanData = base64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '');
                 return { inlineData: { mimeType: 'image/jpeg', data: cleanData } };
@@ -1463,7 +1486,7 @@ Catatan Kategori YouTube ID: 17=Olahraga, 24=Hiburan, 22=Blog&Orang, 26=Cara&Gay
                         contents: [{ parts: partsPayload }],
                         generationConfig: {
                             responseMimeType: 'application/json',
-                            thinking_config: { thinking_budget: 0 } // Low Reasoning setting for speed
+                            thinking_config: { thinking_budget: 0 }
                         }
                     };
 
@@ -1563,7 +1586,7 @@ Catatan Kategori YouTube ID: 17=Olahraga, 24=Hiburan, 22=Blog&Orang, 26=Cara&Gay
             verifyAndRefreshActiveOAuthToken();
         }
 
-        // Multi-Channel OAuth Logic
+        // Multi-Channel Storage & Helper Logic
         function loadConnectedChannels() {
             try {
                 const saved = localStorage.getItem('yt_automator_channels');
@@ -1838,7 +1861,6 @@ Catatan Kategori YouTube ID: 17=Olahraga, 24=Hiburan, 22=Blog&Orang, 26=Cara&Gay
             initDOM();
             loadSettings();
             loadConnectedChannels();
-            checkOAuthHashRedirect();
             setupEventListeners();
         });
     </script>
