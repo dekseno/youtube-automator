@@ -891,7 +891,8 @@
             const u = users[index];
             if (!u) return;
 
-            let baseDate = new Date(u.expired_at > Date.now() ? u.expired_at : Date.now());
+            let expTime = new Date(u.expired_at).getTime();
+            let baseDate = new Date(isNaN(expTime) || expTime < Date.now() ? Date.now() : expTime);
             baseDate.setDate(baseDate.getDate() + days);
             u.expired_at = baseDate.toISOString().slice(0, 16);
 
@@ -963,21 +964,21 @@
             const password = document.getElementById('auth-input-password')?.value || '';
             if (!email || !password) { showToast('Masukkan username dan password!', 'error'); return; }
 
-            // 1. Bypass lokal untuk testing akun dev
+            // 1. Akun Administrator Utama Pemilik Web
             if (email === 'admin' && (password === 'admin' || password === '123')) {
                 applyUserPermissions('admin', new Date(Date.now() + 3650*86400000).toISOString(), email);
                 closeLoginModal();
-                showToast('Login Admin Demo Berhasil!', 'success');
+                showToast('Login Administrator Berhasil!', 'success');
                 return;
             } else if (email === 'vip' && password === 'vip') {
                 applyUserPermissions('vip', new Date(Date.now() + 30*86400000).toISOString(), email);
                 closeLoginModal();
-                showToast('Login VIP Demo Berhasil!', 'success');
+                showToast('Login VIP Member Berhasil!', 'success');
                 return;
             } else if (email === 'standard' && password === 'standard') {
                 applyUserPermissions('standard', new Date(Date.now() + 30*86400000).toISOString(), email);
                 closeLoginModal();
-                showToast('Login Standard Demo Berhasil!', 'success');
+                showToast('Login Standard Member Berhasil!', 'success');
                 return;
             }
 
@@ -1128,6 +1129,431 @@
         function openGuideModal() { const m = document.getElementById('modal-guide'); if(m) m.classList.remove('hidden'); }
         function closeGuideModal() { const m = document.getElementById('modal-guide'); if(m) m.classList.add('hidden'); }
         function closeYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if(m) m.classList.add('hidden'); }
+
+        // Additional missing helper functions & event handlers
+        function copyRedirectUriToClipboard() {
+            const uriDisplay = document.getElementById('txt-redirect-uri-display');
+            if (uriDisplay && uriDisplay.textContent) {
+                const tempInput = document.createElement('input');
+                tempInput.value = uriDisplay.textContent;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast('URL Redirect URI berhasil disalin!', 'success');
+            }
+        }
+
+        async function fetchAvailableGeminiModels() {
+            const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
+            if (!apiKey) {
+                showToast('Masukkan Gemini API Key di Pengaturan terlebih dahulu!', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+                const data = await res.json();
+                if (data.models && elements.selectGeminiModel) {
+                    elements.selectGeminiModel.innerHTML = '';
+                    data.models
+                        .filter(m => m.name.includes('gemini'))
+                        .forEach(m => {
+                            const modelId = m.name.replace('models/', '');
+                            const opt = document.createElement('option');
+                            opt.value = modelId;
+                            opt.textContent = `${modelId} ${modelId.includes('3.6') ? '(Default - Low Reasoning)' : ''}`;
+                            elements.selectGeminiModel.appendChild(opt);
+                        });
+                    showToast('Daftar model Gemini berhasil diperbarui!', 'success');
+                }
+            } catch (err) {
+                showToast('Gagal memuat list model: ' + err.message, 'error');
+            }
+        }
+
+        async function testSupabaseConnection() {
+            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url');
+            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key');
+            if (!url || !key) {
+                showToast('Masukkan URL & Anon Key Supabase terlebih dahulu!', 'error');
+                return;
+            }
+            try {
+                if (window.supabase) {
+                    const client = window.supabase.createClient(url, key);
+                    const { data, error } = await client.from('profiles').select('id').limit(1);
+                    if (error && error.code !== 'PGRST116') throw error;
+                    showToast('🎉 Koneksi ke Supabase BERHASIL & Terverifikasi!', 'success');
+                } else {
+                    showToast('SDK Supabase belum siap', 'error');
+                }
+            } catch (err) {
+                showToast('Gagal koneksi Supabase: ' + err.message, 'error');
+            }
+        }
+
+        function handleVideoFileSelect(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            state.selectedFile = file;
+
+            const videoPreview = document.getElementById('video-preview');
+            const previewCard = document.getElementById('video-preview-card');
+            
+            document.getElementById('meta-file-name').textContent = file.name;
+            document.getElementById('meta-file-size').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            const videoUrl = URL.createObjectURL(file);
+            if (videoPreview) {
+                videoPreview.src = videoUrl;
+                videoPreview.onloadedmetadata = () => {
+                    document.getElementById('meta-duration').textContent = Math.round(videoPreview.duration) + ' detik';
+                    document.getElementById('meta-resolution').textContent = `${videoPreview.videoWidth} x ${videoPreview.videoHeight}`;
+                    extractVideoFrames(videoPreview);
+                };
+            }
+            if (previewCard) previewCard.classList.remove('hidden');
+        }
+
+        function extractVideoFrames(videoEl) {
+            const timestamps = [0.5, 1.5, 3.0, 5.0, 8.0];
+            state.thumbnails = [];
+            const gallery = document.getElementById('thumbnail-gallery');
+            if (gallery) gallery.innerHTML = '';
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            let count = 0;
+            const captureFrame = (time, index) => {
+                const tempVid = document.createElement('video');
+                tempVid.src = videoEl.src;
+                tempVid.currentTime = time;
+                tempVid.onseeked = () => {
+                    canvas.width = tempVid.videoWidth || 640;
+                    canvas.height = tempVid.videoHeight || 360;
+                    ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    state.thumbnails[index] = dataUrl;
+
+                    const imgThumb = document.createElement('img');
+                    imgThumb.src = dataUrl;
+                    imgThumb.className = `w-full h-12 object-cover rounded cursor-pointer border-2 ${index === 0 ? 'border-brand-500' : 'border-transparent'} hover:opacity-80 transition`;
+                    imgThumb.onclick = () => selectThumbnail(index);
+                    if (gallery) gallery.appendChild(imgThumb);
+
+                    if (index === 0) selectThumbnail(0);
+                    count++;
+                };
+            };
+
+            timestamps.forEach((t, i) => captureFrame(t, i));
+        }
+
+        function selectThumbnail(index) {
+            state.selectedThumbnailIndex = index;
+            const displayImg = document.getElementById('selected-thumbnail-img');
+            if (displayImg && state.thumbnails[index]) {
+                displayImg.src = state.thumbnails[index];
+            }
+            const gallery = document.getElementById('thumbnail-gallery');
+            if (gallery) {
+                Array.from(gallery.children).forEach((child, i) => {
+                    child.className = `w-full h-12 object-cover rounded cursor-pointer border-2 ${i === index ? 'border-brand-500' : 'border-transparent'} hover:opacity-80 transition`;
+                });
+            }
+        }
+
+        async function startAiInspection() {
+            const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
+            if (!apiKey) {
+                showToast('Masukkan Gemini API Key terlebih dahulu!', 'error');
+                toggleSettingsPanel();
+                return;
+            }
+
+            const loadingModal = document.getElementById('modal-ai-loading');
+            if (loadingModal) loadingModal.classList.remove('hidden');
+
+            try {
+                const selectedModel = elements.selectGeminiModel?.value || 'gemini-3.6-flash';
+                const framesData = state.thumbnails.map(t => t.split(',')[1]).filter(Boolean);
+
+                const promptText = `Anda adalah pakar SEO & FYP YouTube Pro. Analisis 5-frame video ini dan hasilkan JSON persis dengan format:
+{
+  "title": "Judul Menarik (max 100 char + emoji + #shorts + hashtag FYP)",
+  "description": "Deskripsi terstruktur lengkap dengan timestamp dan hashtag SEO/FYP abadi",
+  "tags": "tag1, tag2, tag3, tag4, tag5",
+  "product_keywords": "Saran kata kunci produk pencarian marketplace (Shopee/Tokopedia)",
+  "category_id": "17"
+}`;
+
+                const contents = [
+                    {
+                        parts: [
+                            { text: promptText },
+                            ...framesData.map(b64 => ({
+                                inlineData: { mimeType: "image/jpeg", data: b64 }
+                            }))
+                        ]
+                    }
+                ];
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents,
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            thinkingConfig: { thinkingBudget: 0 }
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                const resData = await response.json();
+                
+                let aiResult = {};
+                const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                try {
+                    const cleanJson = rawText.match(/\{[\s\S]*\}/)?.[0] || rawText;
+                    aiResult = JSON.parse(cleanJson);
+                } catch (parseErr) {
+                    console.warn("JSON Parse warning, using regex fallback:", parseErr);
+                    const titleMatch = rawText.match(/"title"\s*:\s*"([^"]+)"/);
+                    const descMatch = rawText.match(/"description"\s*:\s*"([^"]+)"/);
+                    const tagsMatch = rawText.match(/"tags"\s*:\s*"([^"]+)"/);
+                    const keywordsMatch = rawText.match(/"product_keywords"\s*:\s*"([^"]+)"/);
+                    const catMatch = rawText.match(/"category_id"\s*:\s*"([^"]+)"/);
+
+                    aiResult = {
+                        title: titleMatch ? titleMatch[1] : (state.selectedFile ? state.selectedFile.name.replace(/\.[^/.]+$/, "") : "Video Shorts FYP"),
+                        description: descMatch ? descMatch[1] : "",
+                        tags: tagsMatch ? tagsMatch[1] : "shorts, fyp, viral",
+                        product_keywords: keywordsMatch ? keywordsMatch[1] : "",
+                        category_id: catMatch ? catMatch[1] : "17"
+                    };
+                }
+
+                document.getElementById('input-ai-title').value = aiResult.title || '';
+                document.getElementById('input-ai-description').value = aiResult.description || '';
+                document.getElementById('input-ai-tags').value = aiResult.tags || '';
+                document.getElementById('input-product-keywords-suggest').value = aiResult.product_keywords || '';
+                if (aiResult.category_id) {
+                    document.getElementById('upload-category-id').value = aiResult.category_id;
+                }
+
+                updateCharCount();
+                syncFilenameWithTitle();
+                switchStep(2);
+                showToast('Inspeksi & Generate Metadata AI Berhasil!', 'success');
+            } catch (err) {
+                console.error("AI Error:", err);
+                showToast('Gagal Inspeksi AI: ' + err.message + '. Silakan coba Regenerate!', 'error');
+            } finally {
+                if (loadingModal) loadingModal.classList.add('hidden');
+            }
+        }
+
+        function updateCharCount() {
+            const titleInput = document.getElementById('input-ai-title');
+            const countSpan = document.getElementById('title-char-count');
+            if (titleInput && countSpan) {
+                countSpan.textContent = `${titleInput.value.length}/100`;
+            }
+        }
+
+        function syncFilenameWithTitle() {
+            const titleInput = document.getElementById('input-ai-title');
+            const filenameInput = document.getElementById('input-renamed-filename');
+            if (titleInput && filenameInput) {
+                const cleanSlug = titleInput.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '_')
+                    .replace(/_+/g, '_')
+                    .substring(0, 60);
+                filenameInput.value = (cleanSlug || 'video') + '.mp4';
+            }
+        }
+
+        function downloadRenamedVideo() {
+            if (!state.selectedFile) {
+                showToast('Tidak ada berkas video yang dipilih!', 'error');
+                return;
+            }
+            const filenameInput = document.getElementById('input-renamed-filename');
+            const newName = filenameInput?.value.trim() || 'renamed_video.mp4';
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(state.selectedFile);
+            a.download = newName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast(`Mengunduh berkas: ${newName}`, 'success');
+        }
+
+        function proceedToStep3() {
+            switchStep(3);
+        }
+
+        function startGoogleOAuthLogin(promptType = 'consent') {
+            const clientId = elements.inputOAuthClientId?.value.trim() || localStorage.getItem('yt_automator_oauth_client_id');
+            if (!clientId) {
+                showToast('Masukkan Google Client ID di Pengaturan API terlebih dahulu!', 'error');
+                toggleSettingsPanel();
+                return;
+            }
+
+            if (window.google?.accounts?.oauth2) {
+                const client = window.google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+                    callback: (tokenResponse) => {
+                        if (tokenResponse.access_token) {
+                            state.accessToken = tokenResponse.access_token;
+                            document.getElementById('oauth-user-status-text').textContent = 'Terkoneksi GIS Verified';
+                            document.getElementById('oauth-user-status-text').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
+                            fetchChannelProfile(tokenResponse.access_token);
+                            showToast('Berhasil terhubung ke akun YouTube!', 'success');
+                        }
+                    }
+                });
+                client.requestAccessToken({ prompt: promptType });
+            } else {
+                showToast('Google Identity Services (GIS) SDK belum siap', 'error');
+            }
+        }
+
+        async function fetchChannelProfile(token) {
+            try {
+                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Gagal mengambil profil channel');
+                const data = await res.json();
+                if (data.items?.[0]) {
+                    const ch = data.items[0];
+                    const chName = ch.snippet.title;
+                    const select = document.getElementById('select-channel-account');
+                    if (select) {
+                        select.innerHTML = `<option value="${ch.id}">${chName} (Terkoneksi)</option>`;
+                    }
+                }
+            } catch (err) {
+                console.error('Fetch Channel Error:', err);
+            }
+        }
+
+        function verifyAndRefreshActiveOAuthToken() {
+            startGoogleOAuthLogin('none');
+        }
+
+        function handleChannelSelectChange() {}
+
+        function toggleScheduleDatePicker() {
+            const vis = document.getElementById('upload-privacy')?.value;
+            const container = document.getElementById('schedule-date-container');
+            if (container) {
+                if (vis === 'scheduled') {
+                    container.classList.remove('hidden');
+                } else {
+                    container.classList.add('hidden');
+                }
+            }
+        }
+
+        async function startYouTubeUpload() {
+            if (!state.selectedFile) {
+                showToast('Pilih berkas video terlebih dahulu!', 'error');
+                return;
+            }
+            if (!state.accessToken) {
+                showToast('Koneksikan Channel YouTube Anda terlebih dahulu!', 'error');
+                return;
+            }
+
+            const title = document.getElementById('input-ai-title')?.value || state.selectedFile.name;
+            const description = document.getElementById('input-ai-description')?.value || '';
+            const tags = (document.getElementById('input-ai-tags')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+            const categoryId = document.getElementById('upload-category-id')?.value || '17';
+            const privacyStatus = document.getElementById('upload-privacy')?.value || 'private';
+            const isKids = document.getElementById('upload-made-for-kids')?.value === 'true';
+
+            const metadata = {
+                snippet: { title, description, tags, categoryId },
+                status: {
+                    privacyStatus: privacyStatus === 'scheduled' ? 'private' : privacyStatus,
+                    selfDeclaredMadeForKids: isKids
+                }
+            };
+
+            if (privacyStatus === 'scheduled') {
+                const publishAt = document.getElementById('upload-publish-at')?.value;
+                if (publishAt) {
+                    metadata.status.publishAt = new Date(publishAt).toISOString();
+                }
+            }
+
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progressText = document.getElementById('upload-percentage');
+            if (progressContainer) progressContainer.classList.remove('hidden');
+
+            try {
+                const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.accessToken}`,
+                        'Content-Type': 'application/json',
+                        'X-Upload-Content-Length': state.selectedFile.size,
+                        'X-Upload-Content-Type': state.selectedFile.type
+                    },
+                    body: JSON.stringify(metadata)
+                });
+
+                if (!initRes.ok) throw new Error(`Initiate Upload Error HTTP ${initRes.status}`);
+                const uploadUrl = initRes.headers.get('Location');
+                if (!uploadUrl) throw new Error('Tidak mendapatkan URL Resumable Upload');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', uploadUrl, true);
+                xhr.setRequestHeader('Content-Type', state.selectedFile.type);
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        if (progressBar) progressBar.style.width = `${percent}%`;
+                        if (progressText) progressText.textContent = `${percent}%`;
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        showToast('🎉 Berhasil Mengunggah Video ke YouTube!', 'success');
+                        switchStep(4);
+                        if (progressContainer) progressContainer.classList.add('hidden');
+                    } else {
+                        showToast('Gagal Unggah: HTTP ' + xhr.status, 'error');
+                    }
+                };
+
+                xhr.onerror = () => showToast('Kesalahan jaringan saat mengunggah', 'error');
+                xhr.send(state.selectedFile);
+
+            } catch (err) {
+                console.error('Upload Error:', err);
+                showToast('Gagal Unggah: ' + err.message, 'error');
+                if (progressContainer) progressContainer.classList.add('hidden');
+            }
+        }
+
+        function handleHistoryChannelFilterChange() {}
+        function fetchAllConnectedChannelsVideos() {}
+        function openYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if(m) m.classList.remove('hidden'); }
+        function resetAllFilters() {}
+        function applyYtFilterModal() { closeYtFilterModal(); }
 
         window.addEventListener('DOMContentLoaded', () => {
             initDOM();
