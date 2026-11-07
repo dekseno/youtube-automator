@@ -90,7 +90,7 @@
                     <h1 class="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
                         YT Automator <span class="bg-gradient-to-r from-brand-400 to-pink-500 bg-clip-text text-transparent text-xs font-black uppercase px-1.5 py-0.5 rounded border border-brand-500/30">Pro</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & GIS Auto-Refresh Multi-Channel Scheduler</p>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & GIS Multi-Channel Manager</p>
                 </div>
             </div>
 
@@ -137,7 +137,7 @@
                     <i class="fa-solid fa-key text-brand-500"></i>
                     <h2 class="font-bold text-sm text-slate-100">Pengaturan Kunci Akses & Default Upload (BYOK)</h2>
                 </div>
-                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">GIS Auto-Refresh Enabled</span>
+                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">GIS Multi-Channel Enabled</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
@@ -329,8 +329,8 @@
                         
                         <!-- Full Native Aspect Ratio Container -->
                         <div id="thumbnail-display-wrapper" class="bg-black rounded-xl overflow-hidden border border-brand-500/50 relative shadow flex items-center justify-center min-h-[220px]">
-                            <img id="selected-thumbnail-img" class="max-h-[380px] w-full object-contain rounded">
-                            <span class="absolute bottom-2 right-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">Thumbnail Terpilih (Full Display)</span>
+                            <img id="selected-thumbnail-img" class="max-h-[380px] w-full object-contain rounded" alt="Thumbnail Preview">
+                            <span class="absolute bottom-2 right-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">Thumbnail Terpilih</span>
                         </div>
                     </div>
 
@@ -421,21 +421,21 @@
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-300">Pilih Channel YouTube Tujuan</label>
-                            <p class="text-[11px] text-slate-400">Sistem otomatis memperbarui token via GIS SDK tanpa redirect</p>
+                            <p class="text-[11px] text-slate-400">VIP & Admin dapat mengelola banyak channel bersamaan</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="verifyAndRefreshActiveOAuthToken()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-shield-halved"></i>
                                 <span>Silent Auto-Refresh</span>
                             </button>
-                            <button onclick="startGoogleOAuthLogin('consent')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
-                                <i class="fa-brands fa-google text-red-400"></i>
-                                <span>+ Tambah / Popup Channel</span>
+                            <button onclick="startGoogleOAuthLogin('consent')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl transition flex items-center gap-1.5 shadow">
+                                <i class="fa-brands fa-google"></i>
+                                <span>+ Tambah / Konek Channel</span>
                             </button>
                         </div>
                     </div>
                     <select id="select-channel-account" onchange="handleChannelSelectChange()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
-                        <option value="">-- Pilih Akun / Login Google Terlebih Dahulu --</option>
+                        <option value="">-- Hubungkan Channel YouTube Terlebih Dahulu --</option>
                     </select>
                 </div>
 
@@ -559,11 +559,16 @@
                             <i class="fa-solid fa-rotate"></i>
                             <span>Sync Semua Channel</span>
                         </button>
-                        <button id="btn-open-yt-filter" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium border border-slate-700 transition flex items-center gap-1.5 shrink-0">
+                        <button id="btn-open-yt-filter" onclick="openYtFilterModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium border border-slate-700 transition flex items-center gap-1.5 shrink-0">
                             <i class="fa-solid fa-sliders text-brand-400"></i>
                             <span>Filter</span>
                         </button>
                     </div>
+                </div>
+
+                <div id="history-loading-spinner" class="hidden text-center py-10">
+                    <i class="fa-solid fa-circle-notch animate-spin text-3xl text-brand-500 mb-2"></i>
+                    <p class="text-xs text-slate-400">Memuat seluruh koleksi video YouTube real-time...</p>
                 </div>
 
                 <div id="history-empty-state" class="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
@@ -573,7 +578,8 @@
                     <p class="text-xs text-slate-400">Belum ada koleksi video/shorts yang diunggah atau sesuai filter.</p>
                 </div>
 
-                <div id="history-vertical-container" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-1"></div>
+                <!-- Responsive Grid Layout: 2 Columns on Mobile, 3 on Tablet, 4 on PC -->
+                <div id="history-vertical-container" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 pt-1"></div>
             </div>
         </div>
 
@@ -611,14 +617,55 @@
         <div class="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-brand-400"></i> Filter & Urutkan Konten
+                    <i class="fa-solid fa-sliders text-brand-400"></i> Filter & Urutkan Konten (YT Studio HP)
                 </h3>
                 <button onclick="closeYtFilterModal()" class="text-slate-400 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Urutkan menurut -->
+                <div class="space-y-2">
+                    <label class="font-bold text-slate-300 block">Urutkan Menurut</label>
+                    <div class="space-y-1.5 pl-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="yt-filter-sort" value="terbaru" checked class="text-brand-500 focus:ring-0">
+                            <span>Terbaru (default)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="yt-filter-sort" value="views" class="text-brand-500 focus:ring-0">
+                            <span>Paling banyak ditonton</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Visibilitas -->
+                <div class="space-y-2 border-t border-slate-800 pt-3">
+                    <label class="font-bold text-slate-300 block">Visibilitas</label>
+                    <div class="grid grid-cols-2 gap-2 pl-1">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="public" class="rounded border-slate-700 text-brand-500"> <span>Publik</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="private" class="rounded border-slate-700 text-brand-500"> <span>Pribadi</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="unlisted" class="rounded border-slate-700 text-brand-500"> <span>Tidak publik</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="scheduled" class="rounded border-slate-700 text-brand-500"> <span>Terjadwal</span></label>
+                    </div>
+                </div>
+
+                <!-- Penayangan -->
+                <div class="space-y-2 border-t border-slate-800 pt-3">
+                    <label class="font-bold text-slate-300 block">Jumlah Penayangan</label>
+                    <div class="flex items-center gap-3">
+                        <select id="yt-filter-views-op" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                            <option value="gt">Lebih dari</option>
+                            <option value="lt">Kurang dari</option>
+                        </select>
+                        <input type="number" id="yt-filter-views-val" placeholder="Masukkan angka" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                    </div>
+                </div>
+            </div>
+
             <div class="pt-3 border-t border-slate-800 flex justify-between gap-2">
-                <button onclick="resetAllFilters()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium">Reset</button>
+                <button onclick="resetAllFilters()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium">Reset Filter</button>
                 <button onclick="applyYtFilterModal()" class="px-6 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow">Terapkan Filter</button>
             </div>
         </div>
@@ -723,7 +770,7 @@
 
     <!-- MAIN CLIENT JAVASCRIPT LOGIC -->
     <script>
-        // Global State & DOM Elements Storage
+        // Global State & Elements Storage
         const elements = {};
         const state = {
             geminiApiKey: '',
@@ -734,18 +781,26 @@
             thumbnails: [],
             selectedThumbnailIndex: 0,
             snapshotBase64: null,
-            supabase: { role: 'guest', expiredAt: null },
+            supabase: { role: 'guest', expiredAt: null, username: '' },
             connectedChannels: [],
             activeChannelId: null,
-            renamedFile: null
+            renamedFile: null,
+            videoHistory: [],
+            ytFilters: {
+                sortBy: 'terbaru',
+                visibility: [],
+                viewsOp: 'gt',
+                viewsVal: null
+            }
         };
 
-        let mockUsersList = [
+        const mockUsersList = [
             { id: '1', username: 'admin', password: '123', role: 'admin', expired_at: '2030-01-01T00:00' },
             { id: '2', username: 'vip_user', password: 'vip2026', role: 'vip', expired_at: '2026-12-31T23:59' },
             { id: '3', username: 'stand_user', password: 'std123', role: 'standard', expired_at: '2026-06-15T12:00' }
         ];
 
+        // UI & Modal Helpers
         function openLoginModal() {
             const m = document.getElementById('modal-supabase-auth');
             if (m) m.classList.remove('hidden');
@@ -760,8 +815,479 @@
             if (m) m.classList.remove('hidden');
             loadAdminUserList();
         }
-        function closeAdminModal() { const m = document.getElementById('modal-admin-dashboard'); if (m) m.classList.add('hidden'); }
+        function closeAdminModal() {
+            const m = document.getElementById('modal-admin-dashboard');
+            if (m) m.classList.add('hidden');
+        }
 
+        function openGuideModal() { const m = document.getElementById('modal-guide'); if (m) m.classList.remove('hidden'); }
+        function closeGuideModal() { const m = document.getElementById('modal-guide'); if (m) m.classList.add('hidden'); }
+
+        function openYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if (m) m.classList.remove('hidden'); }
+        function closeYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if (m) m.classList.add('hidden'); }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800 border border-slate-700';
+            const iconClass = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 animate-slide-up pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        }
+
+        function toggleSettingsPanel() {
+            const panel = document.getElementById('settings-panel');
+            const txt = document.getElementById('txt-toggle-settings');
+            if (!panel) return;
+            state.settingsCollapsed = !state.settingsCollapsed;
+            if (state.settingsCollapsed) {
+                panel.classList.add('hidden');
+                if (txt) txt.textContent = 'Buka Pengaturan API';
+            } else {
+                panel.classList.remove('hidden');
+                if (txt) txt.textContent = 'Tutup Pengaturan API';
+            }
+        }
+
+        function switchStep(stepNum) {
+            document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`step-${stepNum}`);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.step-tab').forEach((tab, idx) => {
+                if (idx + 1 === stepNum) {
+                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow';
+                } else {
+                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200';
+                }
+            });
+
+            if (stepNum === 4) {
+                renderVideoHistory();
+            }
+        }
+
+        // Multi-Channel State & Connected Channel Management
+        function loadConnectedChannels() {
+            try {
+                const saved = localStorage.getItem('yt_automator_connected_channels');
+                state.connectedChannels = saved ? JSON.parse(saved) : [];
+                renderChannelDropdowns();
+            } catch (e) {
+                state.connectedChannels = [];
+            }
+        }
+
+        function saveConnectedChannels() {
+            try {
+                localStorage.setItem('yt_automator_connected_channels', JSON.stringify(state.connectedChannels));
+                renderChannelDropdowns();
+            } catch (e) {}
+        }
+
+        function renderChannelDropdowns() {
+            const step3Select = document.getElementById('select-channel-account');
+            const step4Select = document.getElementById('select-history-channel-filter');
+
+            if (step3Select) {
+                step3Select.innerHTML = '';
+                if (state.connectedChannels.length === 0) {
+                    step3Select.innerHTML = '<option value="">-- Hubungkan Channel YouTube Terlebih Dahulu --</option>';
+                } else {
+                    state.connectedChannels.forEach(ch => {
+                        const opt = document.createElement('option');
+                        opt.value = ch.id;
+                        opt.textContent = `${ch.title} (${ch.customUrl || ch.id})`;
+                        step3Select.appendChild(opt);
+                    });
+                }
+            }
+
+            if (step4Select) {
+                const currentVal = step4Select.value || 'all';
+                step4Select.innerHTML = '<option value="all">🌐 Semua Channel Terkoneksi</option>';
+                state.connectedChannels.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = `📺 ${ch.title}`;
+                    step4Select.appendChild(opt);
+                });
+                step4Select.value = currentVal;
+            }
+
+            // Update OAuth status badge text
+            const oauthStatus = document.getElementById('oauth-user-status-text');
+            if (oauthStatus) {
+                if (state.connectedChannels.length > 0) {
+                    oauthStatus.textContent = `${state.connectedChannels.length} Channel Terkoneksi GIS`;
+                    oauthStatus.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
+                } else {
+                    oauthStatus.textContent = 'Belum Terkoneksi OAuth';
+                    oauthStatus.className = 'text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20';
+                }
+            }
+        }
+
+        function startGoogleOAuthLogin(promptType = 'consent') {
+            const clientId = elements.inputOAuthClientId?.value.trim() || localStorage.getItem('yt_automator_oauth_client_id');
+            if (!clientId) {
+                showToast('Masukkan Google Client ID di Pengaturan API terlebih dahulu!', 'error');
+                toggleSettingsPanel();
+                return;
+            }
+
+            if (state.supabase.role === 'standard' && state.connectedChannels.length >= 1 && promptType === 'consent') {
+                showToast('Akun Standard dibatasi 1 channel terhubung. Upgrade ke VIP untuk multi-channel!', 'error');
+            }
+
+            if (window.google?.accounts?.oauth2) {
+                const client = window.google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse.access_token) {
+                            state.accessToken = tokenResponse.access_token;
+                            await fetchAndAddChannelProfile(tokenResponse.access_token);
+                        }
+                    }
+                });
+                client.requestAccessToken({ prompt: promptType });
+            } else {
+                showToast('Google Identity Services (GIS) SDK belum siap', 'error');
+            }
+        }
+
+        async function fetchAndAddChannelProfile(accessToken) {
+            try {
+                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (!res.ok) throw new Error('Gagal mengambil profil channel YouTube');
+                const data = await res.json();
+                if (data.items?.[0]) {
+                    const ch = data.items[0];
+                    const chId = ch.id;
+                    const chTitle = ch.snippet.title;
+                    const customUrl = ch.snippet.customUrl || '';
+                    const uploadsPlaylistId = ch.contentDetails?.relatedPlaylists?.uploads || '';
+
+                    const existingIdx = state.connectedChannels.findIndex(c => c.id === chId);
+                    const channelObj = {
+                        id: chId,
+                        title: chTitle,
+                        customUrl: customUrl,
+                        uploadsPlaylistId: uploadsPlaylistId,
+                        accessToken: accessToken,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    if (state.supabase.role === 'standard') {
+                        state.connectedChannels = [channelObj];
+                    } else {
+                        if (existingIdx >= 0) {
+                            state.connectedChannels[existingIdx] = channelObj;
+                        } else {
+                            state.connectedChannels.push(channelObj);
+                        }
+                    }
+
+                    saveConnectedChannels();
+                    showToast(`Channel "${chTitle}" berhasil terhubung!`, 'success');
+                    fetchAllConnectedChannelsVideos();
+                }
+            } catch (err) {
+                console.error('Fetch Channel Profile Error:', err);
+                showToast('Gagal memuat detail channel: ' + err.message, 'error');
+            }
+        }
+
+        function verifyAndRefreshActiveOAuthToken() {
+            startGoogleOAuthLogin('none');
+        }
+
+        function handleChannelSelectChange() {
+            const sel = document.getElementById('select-channel-account');
+            if (sel && sel.value) {
+                const ch = state.connectedChannels.find(c => c.id === sel.value);
+                if (ch && ch.accessToken) {
+                    state.accessToken = ch.accessToken;
+                    state.activeChannelId = ch.id;
+                }
+            }
+        }
+
+        // Live YouTube Channel Video Collection (Tab 4)
+        async function fetchAllConnectedChannelsVideos() {
+            if (state.connectedChannels.length === 0) {
+                renderVideoHistory();
+                return;
+            }
+
+            const spinner = document.getElementById('history-loading-spinner');
+            if (spinner) spinner.classList.remove('hidden');
+
+            try {
+                let allVideos = [];
+                for (const ch of state.connectedChannels) {
+                    if (!ch.accessToken) continue;
+                    const channelVids = await fetchChannelVideos(ch);
+                    allVideos = allVideos.concat(channelVids);
+                }
+
+                state.videoHistory = allVideos;
+                try {
+                    localStorage.setItem('yt_automator_video_history', JSON.stringify(allVideos));
+                } catch(e){}
+
+                renderVideoHistory();
+                showToast('Berhasil menyelaraskan seluruh koleksi video channel!', 'success');
+            } catch (err) {
+                console.error("Fetch All Videos Error:", err);
+                showToast('Gagal sync video channel: ' + err.message, 'error');
+            } finally {
+                if (spinner) spinner.classList.add('hidden');
+            }
+        }
+
+        async function fetchChannelVideos(channel) {
+            const token = channel.accessToken;
+            let playlistId = channel.uploadsPlaylistId;
+
+            if (!playlistId) {
+                const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channel.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const chData = await chRes.json();
+                playlistId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+            }
+            if (!playlistId) return [];
+
+            // 1. Fetch Playlist Item IDs (Paginated)
+            let videoIds = [];
+            let nextPageToken = '';
+            let pageCount = 0;
+
+            do {
+                const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50&pageToken=${nextPageToken}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!plRes.ok) break;
+                const plData = await plRes.json();
+                
+                (plData.items || []).forEach(item => {
+                    const vId = item.contentDetails?.videoId || item.snippet?.resourceId?.videoId;
+                    if (vId) videoIds.push(vId);
+                });
+
+                nextPageToken = plData.nextPageToken || '';
+                pageCount++;
+            } while (nextPageToken && pageCount < 10); // Limit to 500 max per channel for speed
+
+            if (videoIds.length === 0) return [];
+
+            // 2. Batch Fetch Video Details (50 IDs per request)
+            let detailedVideos = [];
+            for (let i = 0; i < videoIds.length; i += 50) {
+                const batch = videoIds.slice(i, i + 50).join(',');
+                const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status,statistics&id=${batch}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!vRes.ok) continue;
+                const vData = await vRes.json();
+
+                (vData.items || []).forEach(v => {
+                    const snippet = v.snippet || {};
+                    const status = v.status || {};
+                    const stats = v.statistics || {};
+                    const contentDetails = v.contentDetails || {};
+
+                    const title = snippet.title || '';
+                    const isShorts = title.toLowerCase().includes('#shorts') || (contentDetails.duration && parseIsoDuration(contentDetails.duration) <= 60);
+
+                    detailedVideos.push({
+                        id: v.id,
+                        channelId: channel.id,
+                        channelTitle: channel.title,
+                        title: title,
+                        thumbnail: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || '',
+                        publishedAt: snippet.publishedAt,
+                        status: status,
+                        views: parseInt(stats.viewCount || '0'),
+                        likes: parseInt(stats.likeCount || '0'),
+                        comments: parseInt(stats.commentCount || '0'),
+                        isShorts: isShorts
+                    });
+                });
+            }
+
+            return detailedVideos;
+        }
+
+        function parseIsoDuration(duration) {
+            const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            if (!match) return 0;
+            const hours = parseInt(match[1] || '0');
+            const minutes = parseInt(match[2] || '0');
+            const seconds = parseInt(match[3] || '0');
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        function getEffectiveVisibility(v) {
+            if (v.status?.publishAt && new Date(v.status.publishAt) > new Date()) {
+                return 'scheduled';
+            }
+            return v.status?.privacyStatus || 'public';
+        }
+
+        function handleHistoryChannelFilterChange() {
+            renderVideoHistory();
+        }
+
+        function renderVideoHistory() {
+            const container = document.getElementById('history-vertical-container');
+            const emptyState = document.getElementById('history-empty-state');
+            const channelFilter = document.getElementById('select-history-channel-filter')?.value || 'all';
+
+            if (!container) return;
+
+            let history = [];
+            try {
+                const saved = localStorage.getItem('yt_automator_video_history');
+                history = saved ? JSON.parse(saved) : state.videoHistory;
+            } catch(e) { history = state.videoHistory; }
+
+            // Apply Filters
+            let filtered = history;
+
+            if (channelFilter !== 'all') {
+                filtered = filtered.filter(v => v.channelId === channelFilter);
+            }
+
+            if (state.ytFilters.visibility && state.ytFilters.visibility.length > 0) {
+                filtered = filtered.filter(v => state.ytFilters.visibility.includes(getEffectiveVisibility(v)));
+            }
+
+            if (state.ytFilters.viewsVal !== null && !isNaN(state.ytFilters.viewsVal)) {
+                if (state.ytFilters.viewsOp === 'gt') {
+                    filtered = filtered.filter(v => v.views >= state.ytFilters.viewsVal);
+                } else {
+                    filtered = filtered.filter(v => v.views <= state.ytFilters.viewsVal);
+                }
+            }
+
+            // Apply Sort
+            if (state.ytFilters.sortBy === 'views') {
+                filtered.sort((a, b) => b.views - a.views);
+            } else {
+                filtered.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+            }
+
+            // Update Counter Badges
+            document.getElementById('stat-total-count').textContent = filtered.length;
+            document.getElementById('stat-shorts-count').textContent = filtered.filter(v => v.isShorts).length;
+            document.getElementById('stat-videos-count').textContent = filtered.filter(v => !v.isShorts).length;
+            document.getElementById('stat-scheduled-count').textContent = filtered.filter(v => getEffectiveVisibility(v) === 'scheduled').length;
+
+            if (filtered.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+            container.innerHTML = '';
+
+            filtered.forEach(v => {
+                const vis = getEffectiveVisibility(v);
+                let visBadge = '';
+                if (vis === 'scheduled') {
+                    const pubDate = v.status?.publishAt ? new Date(v.status.publishAt).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+                    visBadge = `<span class="text-amber-400 font-semibold text-[11px] flex items-center gap-1"><i class="fa-solid fa-clock text-amber-400"></i> Dijadwalkan ${pubDate}</span>`;
+                } else if (vis === 'public') {
+                    const timeAgo = formatTimeAgo(v.publishedAt);
+                    visBadge = `<span class="text-slate-400 font-medium text-[11px] flex items-center gap-1"><i class="fa-solid fa-globe text-emerald-400"></i> ${timeAgo}</span>`;
+                } else if (vis === 'private') {
+                    visBadge = `<span class="text-slate-400 font-medium text-[11px] flex items-center gap-1"><i class="fa-solid fa-lock text-rose-400"></i> Pribadi</span>`;
+                } else {
+                    visBadge = `<span class="text-slate-400 font-medium text-[11px] flex items-center gap-1"><i class="fa-solid fa-link text-blue-400"></i> Tidak Publik</span>`;
+                }
+
+                const typeBadge = v.isShorts 
+                    ? `<span class="bg-red-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wider absolute top-2 left-2"><i class="fa-solid fa-bolt"></i> Shorts</span>`
+                    : `<span class="bg-slate-900/80 text-slate-200 text-[9px] font-bold px-1.5 py-0.5 rounded shadow absolute top-2 left-2">Video</span>`;
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 border border-slate-800/80 rounded-xl overflow-hidden hover:border-slate-700 transition flex flex-col justify-between shadow-md";
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="relative aspect-video bg-black overflow-hidden group">
+                            <img src="${v.thumbnail || 'https://placehold.co/600x400/0f172a/94a3b8?text=No+Thumbnail'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="Thumbnail">
+                            ${typeBadge}
+                        </div>
+                        <div class="p-2.5 space-y-1.5">
+                            <h4 class="font-bold text-xs text-slate-100 line-clamp-2 leading-snug">${v.title}</h4>
+                            <div class="flex items-center justify-between pt-1">
+                                ${visBadge}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-2.5 py-2 border-t border-slate-900 bg-slate-900/50 flex items-center justify-between text-[11px] text-slate-400">
+                        <div class="flex items-center gap-2">
+                            <span title="Penayangan"><i class="fa-solid fa-chart-simple text-slate-400"></i> ${v.views.toLocaleString('id-ID')}</span>
+                            <span title="Suka"><i class="fa-regular fa-thumbs-up text-slate-400"></i> ${v.likes.toLocaleString('id-ID')}</span>
+                            <span title="Komentar"><i class="fa-regular fa-comment text-slate-400"></i> ${v.comments.toLocaleString('id-ID')}</span>
+                        </div>
+                        <a href="https://youtube.com/watch?v=${v.id}" target="_blank" class="text-brand-400 hover:text-brand-300"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function formatTimeAgo(dateStr) {
+            if (!dateStr) return '';
+            const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+            if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+            if (diff < 2592000) return `${Math.floor(diff / 86400)} hari lalu`;
+            return new Date(dateStr).toLocaleDateString('id-ID');
+        }
+
+        function applyYtFilterModal() {
+            const sortRadio = document.querySelector('input[name="yt-filter-sort"]:checked');
+            const visCheckboxes = document.querySelectorAll('input[name="yt-filter-vis"]:checked');
+            const viewsOp = document.getElementById('yt-filter-views-op')?.value || 'gt';
+            const viewsInput = document.getElementById('yt-filter-views-val')?.value;
+
+            state.ytFilters.sortBy = sortRadio ? sortRadio.value : 'terbaru';
+            state.ytFilters.visibility = Array.from(visCheckboxes).map(c => c.value);
+            state.ytFilters.viewsOp = viewsOp;
+            state.ytFilters.viewsVal = viewsInput ? parseInt(viewsInput) : null;
+
+            closeYtFilterModal();
+            renderVideoHistory();
+            showToast('Filter berhasil diterapkan!', 'success');
+        }
+
+        function resetAllFilters() {
+            state.ytFilters = { sortBy: 'terbaru', visibility: [], viewsOp: 'gt', viewsVal: null };
+            const sortDefault = document.querySelector('input[name="yt-filter-sort"][value="terbaru"]');
+            if (sortDefault) sortDefault.checked = true;
+            document.querySelectorAll('input[name="yt-filter-vis"]').forEach(c => c.checked = false);
+            const viewsInput = document.getElementById('yt-filter-views-val');
+            if (viewsInput) viewsInput.value = '';
+
+            closeYtFilterModal();
+            renderVideoHistory();
+            showToast('Filter telah di-reset', 'info');
+        }
+
+        // Admin & SaaS User Auth Logic
         function loadAdminUserList() {
             const tbody = document.getElementById('admin-user-table-body');
             const totalSpan = document.getElementById('admin-total-users');
@@ -1028,171 +1554,7 @@
             }
         }
 
-        // System Helpers & Initializers
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            const toast = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800 border border-slate-700';
-            const iconClass = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
-            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 animate-slide-up pointer-events-auto`;
-            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> <span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 4000);
-        }
-
-        function toggleSettingsPanel() {
-            const panel = document.getElementById('settings-panel');
-            const txt = document.getElementById('txt-toggle-settings');
-            if (!panel) return;
-            state.settingsCollapsed = !state.settingsCollapsed;
-            if (state.settingsCollapsed) {
-                panel.classList.add('hidden');
-                if (txt) txt.textContent = 'Buka Pengaturan API';
-            } else {
-                panel.classList.remove('hidden');
-                if (txt) txt.textContent = 'Tutup Pengaturan API';
-            }
-        }
-
-        function switchStep(stepNum) {
-            document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
-            const target = document.getElementById(`step-${stepNum}`);
-            if (target) target.classList.remove('hidden');
-
-            document.querySelectorAll('.step-tab').forEach((tab, idx) => {
-                if (idx + 1 === stepNum) {
-                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow';
-                } else {
-                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200';
-                }
-            });
-        }
-
-        function initDOM() {
-            elements.inputGeminiKey = document.getElementById('input-gemini-key');
-            elements.selectGeminiModel = document.getElementById('select-gemini-model');
-            elements.inputOAuthClientId = document.getElementById('input-oauth-client-id');
-            elements.selectDefaultPrivacy = document.getElementById('select-default-privacy');
-            elements.selectDefaultCategory = document.getElementById('select-default-category');
-            elements.selectDefaultKids = document.getElementById('select-default-kids');
-            elements.inputSupabaseUrl = document.getElementById('input-supabase-url');
-            elements.inputSupabaseKey = document.getElementById('input-supabase-key');
-
-            // Load Redirect URI display
-            const uriDisplay = document.getElementById('txt-redirect-uri-display');
-            if (uriDisplay) {
-                uriDisplay.textContent = window.location.origin + window.location.pathname;
-            }
-        }
-
-        function loadSettings() {
-            try {
-                if (elements.inputGeminiKey) elements.inputGeminiKey.value = localStorage.getItem('yt_automator_gemini_key') || '';
-                if (elements.selectGeminiModel) elements.selectGeminiModel.value = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
-                if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = localStorage.getItem('yt_automator_oauth_client_id') || '';
-                if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = localStorage.getItem('yt_automator_default_privacy') || 'scheduled';
-                if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = localStorage.getItem('yt_automator_default_category') || '17';
-                if (elements.selectDefaultKids) elements.selectDefaultKids.value = localStorage.getItem('yt_automator_default_kids') || 'false';
-                if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = localStorage.getItem('yt_automator_supabase_url') || '';
-                if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = localStorage.getItem('yt_automator_supabase_key') || '';
-
-                // Restore active user session if exists
-                const savedRole = localStorage.getItem('yt_automator_user_role');
-                const savedExp = localStorage.getItem('yt_automator_user_expired');
-                const savedName = localStorage.getItem('yt_automator_user_name');
-                if (savedRole) {
-                    applyUserPermissions(savedRole, savedExp, savedName || 'Member');
-                }
-            } catch (e) {
-                console.error("Error loading settings:", e);
-            }
-        }
-
-        function saveSettings() {
-            try {
-                if (elements.inputGeminiKey) localStorage.setItem('yt_automator_gemini_key', elements.inputGeminiKey.value.trim());
-                if (elements.selectGeminiModel) localStorage.setItem('yt_automator_gemini_model', elements.selectGeminiModel.value);
-                if (elements.inputOAuthClientId) localStorage.setItem('yt_automator_oauth_client_id', elements.inputOAuthClientId.value.trim());
-                if (elements.selectDefaultPrivacy) localStorage.setItem('yt_automator_default_privacy', elements.selectDefaultPrivacy.value);
-                if (elements.selectDefaultCategory) localStorage.setItem('yt_automator_default_category', elements.selectDefaultCategory.value);
-                if (elements.selectDefaultKids) localStorage.setItem('yt_automator_default_kids', elements.selectDefaultKids.value);
-                if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', elements.inputSupabaseUrl.value.trim());
-                if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', elements.inputSupabaseKey.value.trim());
-
-                showToast('Pengaturan berhasil disimpan!', 'success');
-            } catch (e) {
-                showToast('Gagal menyimpan pengaturan: ' + e.message, 'error');
-            }
-        }
-
-        function openGuideModal() { const m = document.getElementById('modal-guide'); if(m) m.classList.remove('hidden'); }
-        function closeGuideModal() { const m = document.getElementById('modal-guide'); if(m) m.classList.add('hidden'); }
-        function closeYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if(m) m.classList.add('hidden'); }
-
-        // Additional missing helper functions & event handlers
-        function copyRedirectUriToClipboard() {
-            const uriDisplay = document.getElementById('txt-redirect-uri-display');
-            if (uriDisplay && uriDisplay.textContent) {
-                const tempInput = document.createElement('input');
-                tempInput.value = uriDisplay.textContent;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                showToast('URL Redirect URI berhasil disalin!', 'success');
-            }
-        }
-
-        async function fetchAvailableGeminiModels() {
-            const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
-            if (!apiKey) {
-                showToast('Masukkan Gemini API Key di Pengaturan terlebih dahulu!', 'error');
-                return;
-            }
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-                if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-                const data = await res.json();
-                if (data.models && elements.selectGeminiModel) {
-                    elements.selectGeminiModel.innerHTML = '';
-                    data.models
-                        .filter(m => m.name.includes('gemini'))
-                        .forEach(m => {
-                            const modelId = m.name.replace('models/', '');
-                            const opt = document.createElement('option');
-                            opt.value = modelId;
-                            opt.textContent = `${modelId} ${modelId.includes('3.6') ? '(Default - Low Reasoning)' : ''}`;
-                            elements.selectGeminiModel.appendChild(opt);
-                        });
-                    showToast('Daftar model Gemini berhasil diperbarui!', 'success');
-                }
-            } catch (err) {
-                showToast('Gagal memuat list model: ' + err.message, 'error');
-            }
-        }
-
-        async function testSupabaseConnection() {
-            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url');
-            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key');
-            if (!url || !key) {
-                showToast('Masukkan URL & Anon Key Supabase terlebih dahulu!', 'error');
-                return;
-            }
-            try {
-                if (window.supabase) {
-                    const client = window.supabase.createClient(url, key);
-                    const { data, error } = await client.from('profiles').select('id').limit(1);
-                    if (error && error.code !== 'PGRST116') throw error;
-                    showToast('🎉 Koneksi ke Supabase BERHASIL & Terverifikasi!', 'success');
-                } else {
-                    showToast('SDK Supabase belum siap', 'error');
-                }
-            } catch (err) {
-                showToast('Gagal koneksi Supabase: ' + err.message, 'error');
-            }
-        }
-
+        // Tab 1 Video Processing & Frame Extraction
         function handleVideoFileSelect(event) {
             const file = event.target.files?.[0];
             if (!file) return;
@@ -1201,54 +1563,100 @@
             const videoPreview = document.getElementById('video-preview');
             const previewCard = document.getElementById('video-preview-card');
             
-            document.getElementById('meta-file-name').textContent = file.name;
-            document.getElementById('meta-file-size').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+            const metaName = document.getElementById('meta-file-name');
+            const metaSize = document.getElementById('meta-file-size');
+            if (metaName) metaName.textContent = file.name;
+            if (metaSize) metaSize.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
 
             const videoUrl = URL.createObjectURL(file);
             if (videoPreview) {
                 videoPreview.src = videoUrl;
                 videoPreview.onloadedmetadata = () => {
-                    document.getElementById('meta-duration').textContent = Math.round(videoPreview.duration) + ' detik';
-                    document.getElementById('meta-resolution').textContent = `${videoPreview.videoWidth} x ${videoPreview.videoHeight}`;
+                    const dur = document.getElementById('meta-duration');
+                    const res = document.getElementById('meta-resolution');
+                    if (dur) dur.textContent = Math.round(videoPreview.duration) + ' detik';
+                    if (res) res.textContent = `${videoPreview.videoWidth} x ${videoPreview.videoHeight}`;
                     extractVideoFrames(videoPreview);
                 };
+                videoPreview.load();
             }
             if (previewCard) previewCard.classList.remove('hidden');
+            event.target.value = '';
         }
 
         function extractVideoFrames(videoEl) {
-            const timestamps = [0.5, 1.5, 3.0, 5.0, 8.0];
+            const duration = videoEl.duration || 10;
+            const timestamps = [
+                Math.min(0.5, duration * 0.1),
+                Math.min(1.5, duration * 0.3),
+                Math.min(3.0, duration * 0.5),
+                Math.min(5.0, duration * 0.7),
+                Math.min(8.0, duration * 0.9)
+            ];
             state.thumbnails = [];
             const gallery = document.getElementById('thumbnail-gallery');
-            if (gallery) gallery.innerHTML = '';
+            if (gallery) gallery.innerHTML = '<div class="col-span-5 text-center text-[10px] text-slate-500 py-2"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Memuat frame...</div>';
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            let count = 0;
-            const captureFrame = (time, index) => {
-                const tempVid = document.createElement('video');
-                tempVid.src = videoEl.src;
-                tempVid.currentTime = time;
-                tempVid.onseeked = () => {
-                    canvas.width = tempVid.videoWidth || 640;
-                    canvas.height = tempVid.videoHeight || 360;
-                    ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    state.thumbnails[index] = dataUrl;
+            const captureSingleFrame = (time) => {
+                return new Promise((resolve) => {
+                    const tempVid = document.createElement('video');
+                    tempVid.muted = true;
+                    tempVid.playsInline = true;
+                    tempVid.preload = 'auto';
+                    tempVid.src = videoEl.src;
+                    
+                    const handleSeek = () => {
+                        canvas.width = tempVid.videoWidth || 640;
+                        canvas.height = tempVid.videoHeight || 360;
+                        try {
+                            ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                            resolve(dataUrl);
+                        } catch(e) {
+                            resolve(null);
+                        }
+                    };
 
-                    const imgThumb = document.createElement('img');
-                    imgThumb.src = dataUrl;
-                    imgThumb.className = `w-full h-12 object-cover rounded cursor-pointer border-2 ${index === 0 ? 'border-brand-500' : 'border-transparent'} hover:opacity-80 transition`;
-                    imgThumb.onclick = () => selectThumbnail(index);
-                    if (gallery) gallery.appendChild(imgThumb);
-
-                    if (index === 0) selectThumbnail(0);
-                    count++;
-                };
+                    tempVid.onloadedmetadata = () => {
+                        tempVid.currentTime = Math.min(time, Math.max(0, tempVid.duration - 0.1));
+                    };
+                    tempVid.onseeked = handleSeek;
+                    tempVid.onerror = () => resolve(null);
+                    
+                    setTimeout(() => resolve(null), 3000);
+                });
             };
 
-            timestamps.forEach((t, i) => captureFrame(t, i));
+            Promise.all(timestamps.map(t => captureSingleFrame(t))).then(results => {
+                const validThumbs = results.filter(Boolean);
+                state.thumbnails = validThumbs;
+                if (gallery) {
+                    gallery.innerHTML = '';
+                    if (validThumbs.length === 0 && videoEl) {
+                        canvas.width = videoEl.videoWidth || 640;
+                        canvas.height = videoEl.videoHeight || 360;
+                        try {
+                            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                            const fallbackUrl = canvas.toDataURL('image/jpeg', 0.85);
+                            state.thumbnails = [fallbackUrl];
+                            validThumbs.push(fallbackUrl);
+                        } catch(e){}
+                    }
+                    validThumbs.forEach((dataUrl, index) => {
+                        const imgThumb = document.createElement('img');
+                        imgThumb.src = dataUrl;
+                        imgThumb.className = `w-full h-12 object-cover rounded cursor-pointer border-2 ${index === 0 ? 'border-brand-500' : 'border-transparent'} hover:opacity-80 transition`;
+                        imgThumb.onclick = () => selectThumbnail(index);
+                        gallery.appendChild(imgThumb);
+                    });
+                }
+                if (validThumbs.length > 0) {
+                    selectThumbnail(0);
+                }
+            });
         }
 
         function selectThumbnail(index) {
@@ -1265,6 +1673,7 @@
             }
         }
 
+        // Tab 2 AI Inspection
         async function startAiInspection() {
             const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
             if (!apiKey) {
@@ -1277,6 +1686,19 @@
             if (loadingModal) loadingModal.classList.remove('hidden');
 
             try {
+                if (!state.thumbnails || state.thumbnails.length === 0) {
+                    const videoPreview = document.getElementById('video-preview');
+                    if (videoPreview) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoPreview.videoWidth || 640;
+                        canvas.height = videoPreview.videoHeight || 360;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(videoPreview, 0, 0, canvas.width, canvas.height);
+                        state.thumbnails = [canvas.toDataURL('image/jpeg', 0.85)];
+                        selectThumbnail(0);
+                    }
+                }
+
                 const selectedModel = elements.selectGeminiModel?.value || 'gemini-3.6-flash';
                 const framesData = state.thumbnails.map(t => t.split(',')[1]).filter(Boolean);
 
@@ -1398,60 +1820,6 @@
             switchStep(3);
         }
 
-        function startGoogleOAuthLogin(promptType = 'consent') {
-            const clientId = elements.inputOAuthClientId?.value.trim() || localStorage.getItem('yt_automator_oauth_client_id');
-            if (!clientId) {
-                showToast('Masukkan Google Client ID di Pengaturan API terlebih dahulu!', 'error');
-                toggleSettingsPanel();
-                return;
-            }
-
-            if (window.google?.accounts?.oauth2) {
-                const client = window.google.accounts.oauth2.initTokenClient({
-                    client_id: clientId,
-                    scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
-                    callback: (tokenResponse) => {
-                        if (tokenResponse.access_token) {
-                            state.accessToken = tokenResponse.access_token;
-                            document.getElementById('oauth-user-status-text').textContent = 'Terkoneksi GIS Verified';
-                            document.getElementById('oauth-user-status-text').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
-                            fetchChannelProfile(tokenResponse.access_token);
-                            showToast('Berhasil terhubung ke akun YouTube!', 'success');
-                        }
-                    }
-                });
-                client.requestAccessToken({ prompt: promptType });
-            } else {
-                showToast('Google Identity Services (GIS) SDK belum siap', 'error');
-            }
-        }
-
-        async function fetchChannelProfile(token) {
-            try {
-                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Gagal mengambil profil channel');
-                const data = await res.json();
-                if (data.items?.[0]) {
-                    const ch = data.items[0];
-                    const chName = ch.snippet.title;
-                    const select = document.getElementById('select-channel-account');
-                    if (select) {
-                        select.innerHTML = `<option value="${ch.id}">${chName} (Terkoneksi)</option>`;
-                    }
-                }
-            } catch (err) {
-                console.error('Fetch Channel Error:', err);
-            }
-        }
-
-        function verifyAndRefreshActiveOAuthToken() {
-            startGoogleOAuthLogin('none');
-        }
-
-        function handleChannelSelectChange() {}
-
         function toggleScheduleDatePicker() {
             const vis = document.getElementById('upload-privacy')?.value;
             const container = document.getElementById('schedule-date-container');
@@ -1464,6 +1832,7 @@
             }
         }
 
+        // Resumable YouTube Video Upload (Tab 3) & Workflow Auto-Reset
         async function startYouTubeUpload() {
             if (!state.selectedFile) {
                 showToast('Pilih berkas video terlebih dahulu!', 'error');
@@ -1531,15 +1900,42 @@
 
                 xhr.onload = () => {
                     if (xhr.status === 200 || xhr.status === 201) {
+                        const responseVideo = JSON.parse(xhr.responseText || '{}');
                         showToast('🎉 Berhasil Mengunggah Video ke YouTube!', 'success');
+                        
+                        // Add item to local history immediately
+                        const uploadedItem = {
+                            id: responseVideo.id || 'uploaded_' + Date.now(),
+                            channelId: state.activeChannelId || (state.connectedChannels[0]?.id),
+                            channelTitle: state.connectedChannels[0]?.title || 'My Channel',
+                            title: title,
+                            thumbnail: state.thumbnails[state.selectedThumbnailIndex] || '',
+                            publishedAt: new Date().toISOString(),
+                            status: metadata.status,
+                            views: 0,
+                            likes: 0,
+                            comments: 0,
+                            isShorts: title.toLowerCase().includes('#shorts')
+                        };
+
+                        state.videoHistory.unshift(uploadedItem);
+                        try { localStorage.setItem('yt_automator_video_history', JSON.stringify(state.videoHistory)); } catch(e){}
+
+                        resetUploadWorkflow();
                         switchStep(4);
                         if (progressContainer) progressContainer.classList.add('hidden');
+                        fetchAllConnectedChannelsVideos();
                     } else {
                         showToast('Gagal Unggah: HTTP ' + xhr.status, 'error');
+                        if (progressContainer) progressContainer.classList.add('hidden');
                     }
                 };
 
-                xhr.onerror = () => showToast('Kesalahan jaringan saat mengunggah', 'error');
+                xhr.onerror = () => {
+                    showToast('Kesalahan jaringan saat mengunggah', 'error');
+                    if (progressContainer) progressContainer.classList.add('hidden');
+                };
+                
                 xhr.send(state.selectedFile);
 
             } catch (err) {
@@ -1549,15 +1945,153 @@
             }
         }
 
-        function handleHistoryChannelFilterChange() {}
-        function fetchAllConnectedChannelsVideos() {}
-        function openYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if(m) m.classList.remove('hidden'); }
-        function resetAllFilters() {}
-        function applyYtFilterModal() { closeYtFilterModal(); }
+        function resetUploadWorkflow() {
+            state.selectedFile = null;
+            state.thumbnails = [];
+            state.snapshotBase64 = null;
+            state.renamedFile = null;
+
+            document.getElementById('file-video-input').value = '';
+            document.getElementById('video-preview').src = '';
+            document.getElementById('video-preview-card').classList.add('hidden');
+
+            document.getElementById('input-ai-title').value = '';
+            document.getElementById('input-ai-description').value = '';
+            document.getElementById('input-ai-tags').value = '';
+            document.getElementById('input-product-tag').value = '';
+            document.getElementById('input-product-keywords-suggest').value = '';
+            document.getElementById('input-renamed-filename').value = '';
+            document.getElementById('thumbnail-gallery').innerHTML = '';
+            document.getElementById('selected-thumbnail-img').src = '';
+
+            const progressBar = document.getElementById('upload-progress-bar');
+            if (progressBar) progressBar.style.width = '0%';
+        }
+
+        // Settings Helpers & Initializer
+        function copyRedirectUriToClipboard() {
+            const uriDisplay = document.getElementById('txt-redirect-uri-display');
+            if (uriDisplay && uriDisplay.textContent) {
+                const tempInput = document.createElement('input');
+                tempInput.value = uriDisplay.textContent;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast('URL Redirect URI berhasil disalin!', 'success');
+            }
+        }
+
+        async function fetchAvailableGeminiModels() {
+            const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
+            if (!apiKey) {
+                showToast('Masukkan Gemini API Key di Pengaturan terlebih dahulu!', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+                const data = await res.json();
+                if (data.models && elements.selectGeminiModel) {
+                    elements.selectGeminiModel.innerHTML = '';
+                    data.models
+                        .filter(m => m.name.includes('gemini'))
+                        .forEach(m => {
+                            const modelId = m.name.replace('models/', '');
+                            const opt = document.createElement('option');
+                            opt.value = modelId;
+                            opt.textContent = `${modelId} ${modelId.includes('3.6') ? '(Default - Low Reasoning)' : ''}`;
+                            elements.selectGeminiModel.appendChild(opt);
+                        });
+                    showToast('Daftar model Gemini berhasil diperbarui!', 'success');
+                }
+            } catch (err) {
+                showToast('Gagal memuat list model: ' + err.message, 'error');
+            }
+        }
+
+        async function testSupabaseConnection() {
+            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url');
+            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key');
+            if (!url || !key) {
+                showToast('Masukkan URL & Anon Key Supabase terlebih dahulu!', 'error');
+                return;
+            }
+            try {
+                if (window.supabase) {
+                    const client = window.supabase.createClient(url, key);
+                    const { data, error } = await client.from('profiles').select('id').limit(1);
+                    if (error && error.code !== 'PGRST116') throw error;
+                    showToast('🎉 Koneksi ke Supabase BERHASIL & Terverifikasi!', 'success');
+                } else {
+                    showToast('SDK Supabase belum siap', 'error');
+                }
+            } catch (err) {
+                showToast('Gagal koneksi Supabase: ' + err.message, 'error');
+            }
+        }
+
+        function initDOM() {
+            elements.inputGeminiKey = document.getElementById('input-gemini-key');
+            elements.selectGeminiModel = document.getElementById('select-gemini-model');
+            elements.inputOAuthClientId = document.getElementById('input-oauth-client-id');
+            elements.selectDefaultPrivacy = document.getElementById('select-default-privacy');
+            elements.selectDefaultCategory = document.getElementById('select-default-category');
+            elements.selectDefaultKids = document.getElementById('select-default-kids');
+            elements.inputSupabaseUrl = document.getElementById('input-supabase-url');
+            elements.inputSupabaseKey = document.getElementById('input-supabase-key');
+
+            const uriDisplay = document.getElementById('txt-redirect-uri-display');
+            if (uriDisplay) {
+                uriDisplay.textContent = window.location.origin + window.location.pathname;
+            }
+        }
+
+        function loadSettings() {
+            try {
+                if (elements.inputGeminiKey) elements.inputGeminiKey.value = localStorage.getItem('yt_automator_gemini_key') || '';
+                if (elements.selectGeminiModel) elements.selectGeminiModel.value = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
+                if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = localStorage.getItem('yt_automator_oauth_client_id') || '';
+                if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = localStorage.getItem('yt_automator_default_privacy') || 'scheduled';
+                if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = localStorage.getItem('yt_automator_default_category') || '17';
+                if (elements.selectDefaultKids) elements.selectDefaultKids.value = localStorage.getItem('yt_automator_default_kids') || 'false';
+                if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = localStorage.getItem('yt_automator_supabase_url') || '';
+                if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = localStorage.getItem('yt_automator_supabase_key') || '';
+
+                const savedRole = localStorage.getItem('yt_automator_user_role');
+                const savedExp = localStorage.getItem('yt_automator_user_expired');
+                const savedName = localStorage.getItem('yt_automator_user_name');
+                if (savedRole) {
+                    applyUserPermissions(savedRole, savedExp, savedName || 'Member');
+                }
+
+                loadConnectedChannels();
+            } catch (e) {
+                console.error("Error loading settings:", e);
+            }
+        }
+
+        function saveSettings() {
+            try {
+                if (elements.inputGeminiKey) localStorage.setItem('yt_automator_gemini_key', elements.inputGeminiKey.value.trim());
+                if (elements.selectGeminiModel) localStorage.setItem('yt_automator_gemini_model', elements.selectGeminiModel.value);
+                if (elements.inputOAuthClientId) localStorage.setItem('yt_automator_oauth_client_id', elements.inputOAuthClientId.value.trim());
+                if (elements.selectDefaultPrivacy) localStorage.setItem('yt_automator_default_privacy', elements.selectDefaultPrivacy.value);
+                if (elements.selectDefaultCategory) localStorage.setItem('yt_automator_default_category', elements.selectDefaultCategory.value);
+                if (elements.selectDefaultKids) localStorage.setItem('yt_automator_default_kids', elements.selectDefaultKids.value);
+                if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', elements.inputSupabaseUrl.value.trim());
+                if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', elements.inputSupabaseKey.value.trim());
+
+                showToast('Pengaturan berhasil disimpan!', 'success');
+            } catch (e) {
+                showToast('Gagal menyimpan pengaturan: ' + e.message, 'error');
+            }
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             initDOM();
             loadSettings();
+            renderVideoHistory();
         });
     </script>
 </body>
