@@ -79,7 +79,7 @@
         </div>
     </div>
 
-    <!-- Header Navigation Bar -->
+    <!-- Header Navigation Bar (Responsive with Mobile Hamburger Menu) -->
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -90,12 +90,12 @@
                     <h1 class="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
                         YT Automator <span class="bg-gradient-to-r from-brand-400 to-pink-500 bg-clip-text text-transparent text-xs font-black uppercase px-1.5 py-0.5 rounded border border-brand-500/30">Pro</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & GIS Multi-Channel Manager</p>
+                    <p class="text-[11px] text-slate-400 hidden md:block">AI Inspector, Auto-Rename SEO & GIS Multi-Channel Manager</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2">
-                <!-- User Auth Badge Status -->
+            <!-- Desktop Actions -->
+            <div class="hidden md:flex items-center gap-2">
                 <div id="user-auth-badge" class="hidden flex items-center gap-2">
                     <button id="btn-open-admin-dashboard" onclick="openAdminModal()" class="hidden px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-user-gear text-purple-200"></i>
@@ -109,26 +109,152 @@
                     </button>
                 </div>
 
-                <button id="btn-open-login-modal" onclick="openLoginModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
+                <button id="btn-open-login-modal" onclick="openLoginModal()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-user-lock"></i>
                     <span>Login Member</span>
                 </button>
 
-                <button id="btn-toggle-settings" onclick="toggleSettingsPanel()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
+                <button id="btn-toggle-settings" onclick="toggleSettingsPanel()" class="hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
                     <i class="fa-solid fa-gear text-brand-400"></i>
                     <span id="txt-toggle-settings">Buka Pengaturan API</span>
                 </button>
 
-                <button onclick="openGuideModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                <!-- Dynamic Guide Button (Only Visible After Login) -->
+                <button id="btn-open-guide-header" onclick="openGuideModal()" class="hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-question text-blue-400"></i>
-                    <span class="hidden sm:inline">Panduan</span>
+                    <span>Panduan Setup</span>
                 </button>
+            </div>
+
+            <!-- Mobile Hamburger Button & Action -->
+            <div class="flex items-center gap-2 md:hidden">
+                <button id="btn-open-login-modal-mobile" onclick="openLoginModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1">
+                    <i class="fa-solid fa-user-lock text-[11px]"></i>
+                    <span>Login</span>
+                </button>
+                <button id="btn-mobile-menu-toggle" onclick="toggleMobileMenu()" class="p-2 bg-slate-800 text-slate-200 rounded-xl border border-slate-700 focus:outline-none">
+                    <i class="fa-solid fa-bars text-base"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Collapsible Menu Dropdown -->
+        <div id="mobile-dropdown-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 space-y-2 text-xs">
+            <button onclick="scrollToHome(); toggleMobileMenu();" class="w-full text-left py-2 px-3 bg-slate-950 rounded-lg text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-house text-brand-400"></i> Beranda
+            </button>
+            <button id="mobile-btn-toggle-settings" onclick="toggleSettingsPanel(); toggleMobileMenu();" class="hidden w-full text-left py-2 px-3 bg-slate-950 rounded-lg text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-gear text-brand-400"></i> Pengaturan API
+            </button>
+            <button id="mobile-btn-guide" onclick="openGuideModal(); toggleMobileMenu();" class="hidden w-full text-left py-2 px-3 bg-slate-950 rounded-lg text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-book text-blue-400"></i> Panduan Setup & Tutorial
+            </button>
+            <button id="mobile-btn-admin-dashboard" onclick="openAdminModal(); toggleMobileMenu();" class="hidden w-full text-left py-2 px-3 bg-purple-900/40 text-purple-200 rounded-lg font-bold flex items-center gap-2 border border-purple-500/30">
+                <i class="fa-solid fa-user-gear text-purple-400"></i> Dashboard Admin
+            </button>
+            <div id="mobile-auth-status" class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                <span id="mobile-role-badge" class="font-bold text-amber-400">Mode Tamu (Guest)</span>
+                <button id="mobile-btn-logout" onclick="handleUserLogout(); toggleMobileMenu();" class="hidden text-rose-400 font-medium">Logout <i class="fa-solid fa-right-from-bracket ml-1"></i></button>
             </div>
         </div>
     </header>
 
     <!-- Main App Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+
+        <!-- LANDING PAGE SECTION (Displayed for Guests / Before Login) -->
+        <section id="landing-page-section" class="space-y-10 py-6">
+            <!-- Hero Banner -->
+            <div class="relative bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-10 text-center space-y-6 shadow-2xl overflow-hidden">
+                <div class="absolute -top-24 -left-24 w-64 h-64 bg-brand-500/20 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+
+                <div class="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/30 px-3.5 py-1.5 rounded-full text-brand-400 text-xs font-bold uppercase tracking-wider animate-pulse-glow">
+                    <i class="fa-solid fa-bolt"></i> Ultimate YouTube Automation Software
+                </div>
+
+                <h2 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight max-w-4xl mx-auto tracking-tight">
+                    Otomatisasi Channel YouTube & Shorts Berbasis <span class="bg-gradient-to-r from-brand-400 via-pink-500 to-purple-400 bg-clip-text text-transparent">Robot AI Pro</span>
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                    Solusi praktis inspek isi video otomatis, pembuatan metadata SEO/FYP abadi, auto-rename berkas, hingga auto-schedule multi-channel YouTube langsung dari browser Anda tanpa server tambahan.
+                </p>
+
+                <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button onclick="openLoginModal()" class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-brand-500/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>Masuk & Mulai Berlangganan</span>
+                    </button>
+                    <button onclick="document.getElementById('features-section').scrollIntoView({ behavior: 'smooth' })" class="w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm rounded-2xl border border-slate-700 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-play text-brand-400"></i>
+                        <span>Pelajari Fitur Unggulan</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature Cards Grid -->
+            <div id="features-section" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-lg"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <h3 class="font-bold text-sm text-white">Inspeksi AI Multimodal 5-Frame</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">AI menganalisis isi video secara utuh dari 5 frame temporal snapshot untuk menghasilkan judul FYP, deskripsi SEO abadi, tag, dan kata kunci produk marketplace.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-lg"><i class="fa-solid fa-users-gear"></i></div>
+                    <h3 class="font-bold text-sm text-white">GIS Multi-Channel Manager</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">Kelola banyak channel YouTube sekaligus via Google Identity Services OAuth dengan fitur silent auto-refresh token tanpa pengalihan halaman.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg"><i class="fa-solid fa-[#000]"></i><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3 class="font-bold text-sm text-white">Single-Device Lock Security</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">Akun terikat aman pada 1 perangkat pembeli sehingga tidak dapat dikloning atau diperjualbelikan ulang tanpa izin admin.</p>
+                </div>
+            </div>
+
+            <!-- Pricing Tier Showcase -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+                <div class="text-center space-y-2">
+                    <h3 class="font-black text-xl text-white">Pilih Paket Lisensi Automator Pro</h3>
+                    <p class="text-xs text-slate-400">Tingkatkan efisiensi upload video YouTube Anda sekarang juga</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                    <!-- Standard Tier -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-1 bg-blue-500/10 text-blue-400 font-bold text-xs rounded-lg border border-blue-500/20">🔹 STANDARD MEMBER</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Akses Model Gemini Standard (`gemini-2.5-flash`)</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Akses 1 Channel Terhubung</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Auto-Rename SEO & Auto-Schedule</li>
+                            </ul>
+                        </div>
+                        <button onclick="openLoginModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700">Pilih Standard</button>
+                    </div>
+
+                    <!-- VIP Tier -->
+                    <div class="bg-slate-950 border-2 border-brand-500/50 rounded-2xl p-5 space-y-4 flex flex-col justify-between relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-brand-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider">REKOMENDASI</div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold text-xs rounded-lg border border-amber-500/30">⭐ VIP MEMBER PRO</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-200">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand-400"></i> Full Access Model Gemini AI Tercepat & Tertinggi</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand-400"></i> Multi-Channel YouTube Unlimited</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand-400"></i> Prioritas Auto-Schedule & Analytics Sync</li>
+                            </ul>
+                        </div>
+                        <button onclick="openLoginModal()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/30">Dapatkan VIP Pro</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN APP WORKSPACE (Hidden for Guests, Revealed after Login) -->
+        <div id="main-app-workspace" class="hidden space-y-6">
 
         <!-- BYOK Settings Panel (Collapsible) -->
         <div id="settings-panel" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4">
@@ -144,31 +270,16 @@
                 <!-- Gemini API Key -->
                 <div class="space-y-1.5">
                     <label class="block font-medium text-slate-300 flex justify-between">
-                        <span>Gemini API Key</span>
+                        <span>1. Gemini API Key</span>
                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 hover:underline">Get Key Gratis <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                     </label>
                     <input type="password" id="input-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
 
-                <!-- Gemini Model Selection -->
-                <div class="space-y-1.5">
-                    <label class="block font-medium text-slate-300 flex justify-between">
-                        <span>Model Gemini AI (Default: Low Reasoning)</span>
-                        <button onclick="fetchAvailableGeminiModels()" class="text-brand-400 hover:underline"><i class="fa-solid fa-rotate text-[10px]"></i> Update List</button>
-                    </label>
-                    <select id="select-gemini-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
-                        <option value="gemini-3.6-flash" selected>gemini-3.6-flash (Default - Penalaran Rendah)</option>
-                        <option value="gemini-3.8-flash">gemini-3.8-flash (Standard)</option>
-                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Ringan)</option>
-                        <option value="gemini-2.5-flash">gemini-2.5-flash (Cepat)</option>
-                        <option value="gemini-1.5-flash">gemini-1.5-flash (Stabil)</option>
-                    </select>
-                </div>
-
                 <!-- Google OAuth Client ID -->
                 <div class="space-y-1.5">
                     <label class="block font-medium text-slate-300 flex justify-between">
-                        <span>Google Client ID (OAuth 2.0)</span>
+                        <span>2. Google Client ID (OAuth 2.0)</span>
                         <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 hover:underline">Console <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                     </label>
                     <input type="text" id="input-oauth-client-id" placeholder="12345...apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
@@ -179,6 +290,21 @@
                             <button onclick="copyRedirectUriToClipboard()" class="text-slate-300 hover:text-white px-1.5 py-0.5 bg-slate-800 rounded text-[9px] shrink-0 ml-1">Copy</button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Gemini Model Selection (Repositioned below OAuth 2.0) -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300 flex justify-between">
+                        <span>3. Model Gemini AI (Default: Low Reasoning)</span>
+                        <button onclick="fetchAvailableGeminiModels()" class="text-brand-400 hover:underline"><i class="fa-solid fa-rotate text-[10px]"></i> Update List</button>
+                    </label>
+                    <select id="select-gemini-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="gemini-3.6-flash" selected>gemini-3.6-flash (Default - Penalaran Rendah)</option>
+                        <option value="gemini-3.8-flash">gemini-3.8-flash (Standard)</option>
+                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Ringan)</option>
+                        <option value="gemini-2.5-flash">gemini-2.5-flash (Cepat)</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Stabil)</option>
+                    </select>
                 </div>
 
                 <!-- Default Visibility -->
@@ -223,19 +349,19 @@
                     </select>
                 </div>
 
-                <!-- Supabase Config -->
-                <div class="space-y-1.5 col-span-1 md:col-span-2 lg:col-span-3 pt-2 border-t border-slate-800/80">
+                <!-- Supabase Config (Restricted to Admin Only) -->
+                <div id="supabase-config-card" class="hidden space-y-1.5 col-span-1 md:col-span-2 lg:col-span-3 pt-3 border-t border-slate-800/80">
                     <div class="flex items-center justify-between">
-                        <h4 class="font-bold text-slate-300 text-xs flex items-center gap-1.5">
-                            <i class="fa-solid fa-database text-emerald-400"></i> Konfigurasi Database Supabase Auth (SaaS Host)
+                        <h4 class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-database text-purple-400"></i> Konfigurasi Database Supabase Auth (Khusus Administrator)
                         </h4>
                         <button onclick="testSupabaseConnection()" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
                             <i class="fa-solid fa-plug"></i> Tes Koneksi Supabase
                         </button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                        <input type="text" id="input-supabase-url" placeholder="Supabase URL (https://xyz.supabase.co)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-                        <input type="password" id="input-supabase-key" placeholder="Supabase Anon Key" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <input type="text" id="input-supabase-url" placeholder="Supabase URL (https://xyz.supabase.co)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500">
+                        <input type="password" id="input-supabase-key" placeholder="Supabase Anon Key" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500">
                     </div>
                 </div>
             </div>
@@ -512,100 +638,73 @@
 
         <!-- STEP 4: COLLECTION & RESPONSIVE GRID -->
         <div id="step-4" class="step-content hidden space-y-5">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Total Diunggah</span>
-                        <span class="text-lg font-bold text-slate-100" id="stat-total-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center text-base"><i class="fa-solid fa-video"></i></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Total Shorts (#shorts)</span>
-                        <span class="text-lg font-bold text-red-400" id="stat-shorts-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center text-base"><i class="fa-solid fa-bolt"></i></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Video Reguler</span>
-                        <span class="text-lg font-bold text-blue-400" id="stat-videos-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-base"><i class="fa-solid fa-film"></i></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Dijadwalkan</span>
-                        <span class="text-lg font-bold text-amber-400" id="stat-scheduled-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-base"><i class="fa-solid fa-clock"></i></div>
-                </div>
-            </div>
-
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-brands fa-youtube text-red-500 text-lg"></i>
-                        <h3 class="font-bold text-slate-200 text-sm">Daftar Konten Channel (Tampilan YT Studio Multi-Grid)</h3>
-                    </div>
-
-                    <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
-                        <select id="select-history-channel-filter" onchange="handleHistoryChannelFilterChange()" class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-200 rounded-full text-xs font-semibold border border-slate-800 transition shrink-0 focus:outline-none focus:border-brand-500">
-                            <option value="all">🌐 Semua Channel</option>
-                        </select>
-
-                        <button id="btn-fetch-live-videos" onclick="fetchAllConnectedChannelsVideos()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-full text-xs font-bold border border-brand-500 transition flex items-center gap-1.5 shrink-0 shadow">
-                            <i class="fa-solid fa-rotate"></i>
-                            <span>Sync Semua Channel</span>
-                        </button>
-                        <button id="btn-open-yt-filter" onclick="openYtFilterModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium border border-slate-700 transition flex items-center gap-1.5 shrink-0">
-                            <i class="fa-solid fa-sliders text-brand-400"></i>
-                            <span>Filter</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="history-loading-spinner" class="hidden text-center py-10">
-                    <i class="fa-solid fa-circle-notch animate-spin text-3xl text-brand-500 mb-2"></i>
-                    <p class="text-xs text-slate-400">Memuat seluruh koleksi video YouTube real-time...</p>
-                </div>
-
-                <div id="history-empty-state" class="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3 text-xl">
-                        <i class="fa-solid fa-folder-open"></i>
-                    </div>
-                    <p class="text-xs text-slate-400">Belum ada koleksi video/shorts yang diunggah atau sesuai filter.</p>
-                </div>
-
-                <!-- Responsive Grid Layout: 2 Columns on Mobile, 3 on Tablet, 4 on PC -->
-                <div id="history-vertical-container" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 pt-1"></div>
-            </div>
-        </div>
+        </div> <!-- End of #main-app-workspace -->
 
     </main>
 
-    <!-- Modal Instructions -->
+    <!-- Modal Instructions & Beginner Step-by-Step Tutorial -->
     <div id="modal-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative">
             <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
-            <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
-                <i class="fa-solid fa-book-open text-brand-500"></i> Panduan Setup Kunci Akses (100% Gratis)
+            <h3 class="font-bold text-base text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
+                <i class="fa-solid fa-book-open text-brand-500"></i> Panduan Step-by-Step Setup Kunci Akses (Orang Awam Friendly)
             </h3>
-            <div class="space-y-3 text-xs text-slate-300 overflow-y-auto max-h-[60vh] pr-2">
-                <p>Tools ini didesain 100% client-side tanpa server berbayar. Gunakan API Key pribadi Anda:</p>
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-brand-400">1. Cara Dapatkan Gemini API Key Gratis:</h4>
-                    <ol class="list-decimal pl-4 space-y-1">
-                        <li>Buka <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 underline">Google AI Studio</a>.</li>
-                        <li>Klik <b>Get API key</b> -> <b>Create API key</b>.</li>
+            
+            <div class="space-y-4 text-xs text-slate-300 overflow-y-auto max-h-[65vh] pr-2 scrollbar-none">
+                
+                <!-- Tutorial 1: Gemini API Key -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-brand-400 text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-key"></i> LANGKAH 1: Dapatkan Gemini API Key (Gratis)
+                    </h4>
+                    <ol class="list-decimal pl-4 space-y-1.5 text-slate-300">
+                        <li>Buka Google AI Studio di: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 underline font-bold">aistudio.google.com/app/apikey</a></li>
+                        <li>Login menggunakan akun Google / Gmail Anda.</li>
+                        <li>Klik tombol biru <b>"Create API Key"</b>.</li>
+                        <li>Salin kode kunci yang muncul (diawali dengan kata <code>AIzaSy...</code>).</li>
+                        <li>Buka menu <b>Pengaturan API</b> di web ini lalu tempelkan pada kolom <b>Gemini API Key</b>.</li>
                     </ol>
                 </div>
+
+                <!-- Tutorial 2: Google OAuth Client ID & JavaScript Origin -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                        <i class="fa-brands fa-google"></i> LANGKAH 2: Dapatkan Google Client ID & Salin JavaScript Origin
+                    </h4>
+                    <ol class="list-decimal pl-4 space-y-1.5 text-slate-300">
+                        <li>Buka Google Cloud Console di: <a href="https://console.cloud.google.com/" target="_blank" class="text-purple-400 underline font-bold">console.cloud.google.com</a></li>
+                        <li>Buat project baru atau pilih project yang sudah ada.</li>
+                        <li>Di menu pencarian atas, ketik <b>"YouTube Data API v3"</b> lalu klik <b>ENABLE (Aktifkan)</b>.</li>
+                        <li>Masuk ke menu <b>APIs & Services</b> &gt; <b>Credentials</b>.</li>
+                        <li>Klik <b>Create Credentials</b> &gt; Pilih <b>OAuth Client ID</b>.</li>
+                        <li>Pilih <i>Application type</i>: <b>Web Application</b>.</li>
+                        <li>Di bagian <b>"Authorized JavaScript origins"</b>, klik <b>+ ADD URI</b>, lalu tempelkan URL Web Anda:
+                            <div class="mt-1 font-mono text-brand-400 bg-slate-900 p-2 rounded border border-slate-800 flex items-center justify-between">
+                                <span id="tutorial-uri-display" class="truncate"></span>
+                                <button onclick="copyRedirectUriToClipboard()" class="text-slate-300 px-2 py-0.5 bg-slate-800 rounded text-[10px]">Copy</button>
+                            </div>
+                        </li>
+                        <li>Klik **CREATE** lalu salin string **Client ID** (diawali angka dan diakhiri <code>.apps.googleusercontent.com</code>).</li>
+                        <li>Tempelkan ke kolom <b>Google Client ID</b> di Pengaturan API web ini.</li>
+                    </ol>
+                </div>
+
+                <!-- Tutorial 3: Single Device Lock Policy -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved"></i> KEAMANAN LISENSI: System Single-Device Lock
+                    </h4>
+                    <p class="text-slate-400 leading-relaxed">
+                        Aplikasi ini dilindungi oleh lisensi perangkat murni. Setiap akun pembeli terikat secara unik pada **1 perangkat (HP/Laptop)** pertama yang digunakan untuk login. Jika pengguna lain mencoba menggunakan username & password tersebut dari perangkat berbeda, akses akan ditolak secara otomatis oleh sistem.
+                    </p>
+                </div>
+
             </div>
+
             <div class="pt-2 flex justify-end">
-                <button onclick="closeGuideModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl">
+                <button onclick="closeGuideModal()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow">
                     Mengerti & Tutup
                 </button>
             </div>
@@ -671,7 +770,7 @@
         </div>
     </div>
 
-    <!-- Supabase Login Modal -->
+    <!-- Supabase Login Modal (Enhanced with Enter key & Loading Spinner) -->
     <div id="modal-supabase-auth" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative animate-slide-up">
             <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
@@ -682,12 +781,16 @@
                     <i class="fa-solid fa-user-shield"></i>
                 </div>
                 <h3 class="font-bold text-base text-slate-100">Login Member Automator</h3>
-                <p class="text-xs text-slate-400">Masukkan Username / Email & Password akun Anda</p>
+                <p class="text-xs text-slate-400">Masukkan Username & Password akun Anda</p>
             </div>
             <div class="space-y-3 text-xs">
-                <input type="text" id="auth-input-email" placeholder="Username / Email (Cth: admin, vip, standard)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
-                <input type="password" id="auth-input-password" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
-                <button id="btn-submit-auth" onclick="handleSupabaseLogin()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/20 transition">Masuk Member Pro</button>
+                <input type="text" id="auth-input-email" onkeydown="if(event.key==='Enter') handleSupabaseLogin()" placeholder="Username / Email (Cth: admin, vip, standard)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                <input type="password" id="auth-input-password" onkeydown="if(event.key==='Enter') handleSupabaseLogin()" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                
+                <button id="btn-submit-auth" onclick="handleSupabaseLogin()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2">
+                    <span id="txt-login-btn">Masuk Member Pro</span>
+                    <i id="spin-login-btn" class="fa-solid fa-circle-notch animate-spin hidden"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -794,11 +897,31 @@
             }
         };
 
+        // Persistent Single-Device Fingerprint Lock Identifier
+        function getOrCreateDeviceId() {
+            let deviceId = localStorage.getItem('yt_automator_device_id');
+            if (!deviceId) {
+                deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+                localStorage.setItem('yt_automator_device_id', deviceId);
+            }
+            return deviceId;
+        }
+
         const mockUsersList = [
-            { id: '1', username: 'admin', password: '123', role: 'admin', expired_at: '2030-01-01T00:00' },
-            { id: '2', username: 'vip_user', password: 'vip2026', role: 'vip', expired_at: '2026-12-31T23:59' },
-            { id: '3', username: 'stand_user', password: 'std123', role: 'standard', expired_at: '2026-06-15T12:00' }
+            { id: '1', username: 'admin', password: '123', role: 'admin', expired_at: '2030-01-01T00:00', device_id: null },
+            { id: '2', username: 'vip_user', password: 'vip2026', role: 'vip', expired_at: '2026-12-31T23:59', device_id: null },
+            { id: '3', username: 'stand_user', password: 'std123', role: 'standard', expired_at: '2026-06-15T12:00', device_id: null }
         ];
+
+        // Mobile Hamburger Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-dropdown-menu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        function scrollToHome() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         // UI & Modal Helpers
         function openLoginModal() {
@@ -1437,21 +1560,63 @@
 
             const badgeContainer = document.getElementById('user-auth-badge');
             const loginBtn = document.getElementById('btn-open-login-modal');
+            const loginBtnMobile = document.getElementById('btn-open-login-modal-mobile');
             const adminBtn = document.getElementById('btn-open-admin-dashboard');
+            const settingsBtn = document.getElementById('btn-toggle-settings');
+            const mobileSettingsBtn = document.getElementById('mobile-btn-toggle-settings');
+            const mobileAdminBtn = document.getElementById('mobile-btn-admin-dashboard');
+            const mobileLogoutBtn = document.getElementById('mobile-btn-logout');
+            const mobileRoleBadge = document.getElementById('mobile-role-badge');
             const roleLabel = document.getElementById('lbl-role-name');
 
-            if (badgeContainer) badgeContainer.classList.remove('hidden');
-            if (loginBtn) loginBtn.classList.add('hidden');
+            const guideBtnHeader = document.getElementById('btn-open-guide-header');
+            const mobileGuideBtn = document.getElementById('mobile-btn-guide');
+
+            const landingSection = document.getElementById('landing-page-section');
+            const workspaceSection = document.getElementById('main-app-workspace');
+            const supabaseConfigCard = document.getElementById('supabase-config-card');
+
+            // Toggle Landing Page vs Main Workspace
+            if (role !== 'guest') {
+                if (landingSection) landingSection.classList.add('hidden');
+                if (workspaceSection) workspaceSection.classList.remove('hidden');
+                if (badgeContainer) badgeContainer.classList.remove('hidden');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (loginBtnMobile) loginBtnMobile.classList.add('hidden');
+                if (settingsBtn) settingsBtn.classList.remove('hidden');
+                if (mobileSettingsBtn) mobileSettingsBtn.classList.remove('hidden');
+                if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('hidden');
+                if (guideBtnHeader) guideBtnHeader.classList.remove('hidden');
+                if (mobileGuideBtn) mobileGuideBtn.classList.remove('hidden');
+            } else {
+                if (landingSection) landingSection.classList.remove('hidden');
+                if (workspaceSection) workspaceSection.classList.add('hidden');
+                if (badgeContainer) badgeContainer.classList.add('hidden');
+                if (loginBtn) loginBtn.classList.remove('hidden');
+                if (loginBtnMobile) loginBtnMobile.classList.remove('hidden');
+                if (settingsBtn) settingsBtn.classList.add('hidden');
+                if (mobileSettingsBtn) mobileSettingsBtn.classList.add('hidden');
+                if (mobileLogoutBtn) mobileLogoutBtn.classList.add('hidden');
+                if (guideBtnHeader) guideBtnHeader.classList.add('hidden');
+                if (mobileGuideBtn) mobileGuideBtn.classList.add('hidden');
+            }
 
             if (roleLabel) {
                 roleLabel.textContent = role === 'admin' ? '👑 ADMIN' : role === 'vip' ? '⭐ VIP MEMBER' : '🔹 STANDARD';
+            }
+            if (mobileRoleBadge) {
+                mobileRoleBadge.textContent = role === 'admin' ? '👑 ADMIN' : role === 'vip' ? '⭐ VIP MEMBER' : role === 'standard' ? '🔹 STANDARD' : 'Mode Tamu (Guest)';
             }
 
             if (adminBtn) {
                 if (role === 'admin') {
                     adminBtn.classList.remove('hidden');
+                    if (mobileAdminBtn) mobileAdminBtn.classList.remove('hidden');
+                    if (supabaseConfigCard) supabaseConfigCard.classList.remove('hidden');
                 } else {
                     adminBtn.classList.add('hidden');
+                    if (mobileAdminBtn) mobileAdminBtn.classList.add('hidden');
+                    if (supabaseConfigCard) supabaseConfigCard.classList.add('hidden');
                 }
             }
 
@@ -1470,18 +1635,7 @@
             localStorage.removeItem('yt_automator_user_role');
             localStorage.removeItem('yt_automator_user_expired');
             localStorage.removeItem('yt_automator_user_name');
-            state.supabase = { role: 'guest', expiredAt: null, username: '' };
-
-            const badgeContainer = document.getElementById('user-auth-badge');
-            const loginBtn = document.getElementById('btn-open-login-modal');
-            const adminBtn = document.getElementById('btn-open-admin-dashboard');
-            const modelSelect = elements.selectGeminiModel || document.getElementById('select-gemini-model');
-
-            if (badgeContainer) badgeContainer.classList.add('hidden');
-            if (loginBtn) loginBtn.classList.remove('hidden');
-            if (adminBtn) adminBtn.classList.add('hidden');
-            if (modelSelect) modelSelect.disabled = false;
-
+            applyUserPermissions('guest', null, '');
             showToast('Berhasil Logout', 'info');
         }
 
@@ -1490,26 +1644,33 @@
             const password = document.getElementById('auth-input-password')?.value || '';
             if (!email || !password) { showToast('Masukkan username dan password!', 'error'); return; }
 
-            // 1. Akun Administrator Utama Pemilik Web
-            if (email === 'admin' && (password === 'admin' || password === '123')) {
-                applyUserPermissions('admin', new Date(Date.now() + 3650*86400000).toISOString(), email);
-                closeLoginModal();
-                showToast('Login Administrator Berhasil!', 'success');
-                return;
-            } else if (email === 'vip' && password === 'vip') {
-                applyUserPermissions('vip', new Date(Date.now() + 30*86400000).toISOString(), email);
-                closeLoginModal();
-                showToast('Login VIP Member Berhasil!', 'success');
-                return;
-            } else if (email === 'standard' && password === 'standard') {
-                applyUserPermissions('standard', new Date(Date.now() + 30*86400000).toISOString(), email);
-                closeLoginModal();
-                showToast('Login Standard Member Berhasil!', 'success');
-                return;
-            }
+            const txtBtn = document.getElementById('txt-login-btn');
+            const spinBtn = document.getElementById('spin-login-btn');
+            if (txtBtn) txtBtn.textContent = 'Memverifikasi Perangkat...';
+            if (spinBtn) spinBtn.classList.remove('hidden');
 
-            // 2. Cek ke Supabase Database / Local Managed Users
+            const currentDeviceId = getOrCreateDeviceId();
+
             try {
+                // 1. Akun Administrator Utama Pemilik Web
+                if (email === 'admin' && (password === 'admin' || password === '123')) {
+                    applyUserPermissions('admin', new Date(Date.now() + 3650*86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login Administrator Berhasil!', 'success');
+                    return;
+                } else if (email === 'vip' && password === 'vip') {
+                    applyUserPermissions('vip', new Date(Date.now() + 30*86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login VIP Member Berhasil!', 'success');
+                    return;
+                } else if (email === 'standard' && password === 'standard') {
+                    applyUserPermissions('standard', new Date(Date.now() + 30*86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login Standard Member Berhasil!', 'success');
+                    return;
+                }
+
+                // 2. Cek ke Supabase Database dengan Single-Device Lock
                 const url = state.supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
                 const key = state.supabaseKey || localStorage.getItem('yt_automator_supabase_key');
 
@@ -1523,6 +1684,17 @@
                     if (profiles && profiles.length > 0) {
                         const matchedUser = profiles.find(p => p.password === password || p.username === email);
                         if (matchedUser) {
+                            // Check Single-Device Lock
+                            if (matchedUser.role !== 'admin') {
+                                if (matchedUser.device_id && matchedUser.device_id !== currentDeviceId) {
+                                    showToast('🚫 GAGAL LOGIN: Akun ini terikat pada perangkat lain! Hubungi Admin untuk reset lisensi.', 'error');
+                                    return;
+                                } else if (!matchedUser.device_id) {
+                                    // Claim device ID for user
+                                    await client.from('profiles').update({ device_id: currentDeviceId }).eq('id', matchedUser.id);
+                                }
+                            }
+
                             const userRole = matchedUser.role || 'standard';
                             const expDate = matchedUser.expired_at || new Date(Date.now() + 30*86400000).toISOString();
                             applyUserPermissions(userRole, expDate, matchedUser.username || email);
@@ -1539,11 +1711,21 @@
                     managedUsers = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList;
                 } catch(e) { managedUsers = mockUsersList; }
 
-                const localUser = managedUsers.find(u => u.username === email && u.password === password);
-                if (localUser) {
-                    applyUserPermissions(localUser.role, localUser.expired_at, localUser.username);
+                const localUserIdx = managedUsers.findIndex(u => u.username === email && u.password === password);
+                if (localUserIdx >= 0) {
+                    const userObj = managedUsers[localUserIdx];
+                    if (userObj.role !== 'admin') {
+                        if (userObj.device_id && userObj.device_id !== currentDeviceId) {
+                            showToast('🚫 GAGAL LOGIN: Akun ini terikat pada perangkat lain! Hubungi Admin.', 'error');
+                            return;
+                        } else if (!userObj.device_id) {
+                            managedUsers[localUserIdx].device_id = currentDeviceId;
+                            localStorage.setItem('yt_automator_managed_users', JSON.stringify(managedUsers));
+                        }
+                    }
+                    applyUserPermissions(userObj.role, userObj.expired_at, userObj.username);
                     closeLoginModal();
-                    showToast(`Login Berhasil sebagai ${localUser.username}!`, 'success');
+                    showToast(`Login Berhasil sebagai ${userObj.username}!`, 'success');
                     return;
                 }
 
@@ -1551,6 +1733,9 @@
             } catch (err) {
                 console.error("Login Error:", err);
                 showToast('Gagal login: ' + err.message, 'error');
+            } finally {
+                if (txtBtn) txtBtn.textContent = 'Masuk Member Pro';
+                if (spinBtn) spinBtn.classList.add('hidden');
             }
         }
 
@@ -2041,10 +2226,11 @@
             elements.inputSupabaseUrl = document.getElementById('input-supabase-url');
             elements.inputSupabaseKey = document.getElementById('input-supabase-key');
 
+            const currentOrigin = window.location.origin + window.location.pathname;
             const uriDisplay = document.getElementById('txt-redirect-uri-display');
-            if (uriDisplay) {
-                uriDisplay.textContent = window.location.origin + window.location.pathname;
-            }
+            const tutorialDisplay = document.getElementById('tutorial-uri-display');
+            if (uriDisplay) uriDisplay.textContent = currentOrigin;
+            if (tutorialDisplay) tutorialDisplay.textContent = currentOrigin;
         }
 
         function loadSettings() {
@@ -2058,12 +2244,10 @@
                 if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = localStorage.getItem('yt_automator_supabase_url') || '';
                 if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = localStorage.getItem('yt_automator_supabase_key') || '';
 
-                const savedRole = localStorage.getItem('yt_automator_user_role');
+                const savedRole = localStorage.getItem('yt_automator_user_role') || 'guest';
                 const savedExp = localStorage.getItem('yt_automator_user_expired');
                 const savedName = localStorage.getItem('yt_automator_user_name');
-                if (savedRole) {
-                    applyUserPermissions(savedRole, savedExp, savedName || 'Member');
-                }
+                applyUserPermissions(savedRole, savedExp, savedName || 'Member');
 
                 loadConnectedChannels();
             } catch (e) {
