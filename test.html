@@ -27,6 +27,10 @@
     </script>
     <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Identity Services (GIS) Client SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -38,6 +42,11 @@
             to { transform: translateY(0); opacity: 1; }
         }
         .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        .animate-pulse-glow { animation: pulseGlow 2s infinite ease-in-out; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
@@ -45,7 +54,32 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- Header Navigation Bar -->
+    <!-- AI Inspection Loading Overlay Modal -->
+    <div id="modal-ai-loading" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex flex-col items-center justify-center p-6 text-center">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full space-y-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+            
+            <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-brand-500/20 border-t-brand-500 animate-spin"></div>
+                <div class="w-14 h-14 rounded-full bg-slate-950 flex items-center justify-center text-brand-400 text-2xl animate-pulse-glow">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2 relative z-10">
+                <h3 class="font-bold text-lg text-white">Inspeksi AI Multimodal Sedang Berjalan</h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    AI sedang menganalisis isi seluruh video Anda & menyusun metadata SEO / FYP abadi.
+                </p>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-amber-400 font-medium mt-3">
+                    <i class="fa-solid fa-hourglass-half mr-1"></i> Mohon tunggu sampai semua kolom di Tab 2 & 3 terisi otomatis.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Navigation Bar (Responsive with Mobile Hamburger Menu) -->
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -56,26 +90,171 @@
                     <h1 class="font-bold text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
                         YT Automator <span class="bg-gradient-to-r from-brand-400 to-pink-500 bg-clip-text text-transparent text-xs font-black uppercase px-1.5 py-0.5 rounded border border-brand-500/30">Pro</span>
                     </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">AI Inspector, Auto-Rename SEO & YouTube Multi-Channel Scheduler</p>
+                    <p class="text-[11px] text-slate-400 hidden md:block">AI Inspector, Auto-Rename SEO & GIS Multi-Channel Manager</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2">
-                <button id="btn-toggle-settings" onclick="toggleSettingsPanel()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
+            <!-- Desktop Actions -->
+            <div class="hidden md:flex items-center gap-2">
+                <div id="user-auth-badge" class="hidden flex items-center gap-2">
+                    <button id="btn-open-admin-dashboard" onclick="openAdminModal()" class="hidden px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-user-gear text-purple-200"></i>
+                        <span>Dashboard Admin</span>
+                    </button>
+                    <span id="txt-user-role-badge" class="px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                        <i class="fa-solid fa-crown text-[10px]"></i> <span id="lbl-role-name">VIP Member</span>
+                    </span>
+                    <button onclick="handleUserLogout()" title="Logout Member" class="p-1.5 bg-slate-800 hover:bg-rose-600/20 hover:text-rose-400 text-slate-400 rounded-xl border border-slate-700 transition">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    </button>
+                </div>
+
+                <button id="btn-open-login-modal" onclick="openLoginModal()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <span>Login Member</span>
+                </button>
+
+                <button id="btn-toggle-settings" onclick="toggleSettingsPanel()" class="hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
                     <i class="fa-solid fa-gear text-brand-400"></i>
                     <span id="txt-toggle-settings">Buka Pengaturan API</span>
                 </button>
 
                 <button onclick="openGuideModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-question text-blue-400"></i>
-                    <span class="hidden sm:inline">Panduan</span>
+                    <span>Panduan Setup</span>
                 </button>
+            </div>
+
+            <!-- Mobile Hamburger Button & Action -->
+            <div class="flex items-center gap-2 md:hidden">
+                <button id="btn-open-login-modal-mobile" onclick="openLoginModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1">
+                    <i class="fa-solid fa-user-lock text-[11px]"></i>
+                    <span>Login</span>
+                </button>
+                <button id="btn-mobile-menu-toggle" onclick="toggleMobileMenu()" class="p-2 bg-slate-800 text-slate-200 rounded-xl border border-slate-700 focus:outline-none">
+                    <i class="fa-solid fa-bars text-base"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Collapsible Menu Dropdown -->
+        <div id="mobile-dropdown-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 space-y-2 text-xs">
+            <button onclick="scrollToHome(); toggleMobileMenu();" class="w-full text-left py-2 px-3 bg-slate-950 rounded-lg text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-house text-brand-400"></i> Beranda
+            </button>
+            <button id="mobile-btn-toggle-settings" onclick="toggleSettingsPanel(); toggleMobileMenu();" class="hidden w-full text-left py-2 px-3 bg-slate-950 rounded-lg text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-gear text-brand-400"></i> Pengaturan API
+            </button>
+            <button onclick="openGuideModal(); toggleMobileMenu();" class="w-full text-left py-2 px-3 bg-slate-950 rounded-lg text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-book text-blue-400"></i> Panduan Setup & Tutorial
+            </button>
+            <button id="mobile-btn-admin-dashboard" onclick="openAdminModal(); toggleMobileMenu();" class="hidden w-full text-left py-2 px-3 bg-purple-900/40 text-purple-200 rounded-lg font-bold flex items-center gap-2 border border-purple-500/30">
+                <i class="fa-solid fa-user-gear text-purple-400"></i> Dashboard Admin
+            </button>
+            <div id="mobile-auth-status" class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                <span id="mobile-role-badge" class="font-bold text-amber-400">Mode Tamu (Guest)</span>
+                <button id="mobile-btn-logout" onclick="handleUserLogout(); toggleMobileMenu();" class="hidden text-rose-400 font-medium">Logout <i class="fa-solid fa-right-from-bracket ml-1"></i></button>
             </div>
         </div>
     </header>
 
     <!-- Main App Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
+
+        <!-- LANDING PAGE SECTION (Displayed for Guests / Before Login) -->
+        <section id="landing-page-section" class="space-y-10 py-6">
+            <!-- Hero Banner -->
+            <div class="relative bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-10 text-center space-y-6 shadow-2xl overflow-hidden">
+                <div class="absolute -top-24 -left-24 w-64 h-64 bg-brand-500/20 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+
+                <div class="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/30 px-3.5 py-1.5 rounded-full text-brand-400 text-xs font-bold uppercase tracking-wider animate-pulse-glow">
+                    <i class="fa-solid fa-bolt"></i> Ultimate YouTube Automation Software
+                </div>
+
+                <h2 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight max-w-4xl mx-auto tracking-tight">
+                    Otomatisasi Channel YouTube & Shorts Berbasis <span class="bg-gradient-to-r from-brand-400 via-pink-500 to-purple-400 bg-clip-text text-transparent">Gemini AI Pro</span>
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                    Solusi praktis inspek isi video otomatis, pembuatan metadata SEO/FYP abadi, auto-rename berkas, hingga auto-schedule multi-channel YouTube langsung dari browser Anda tanpa server tambahan.
+                </p>
+
+                <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button onclick="openLoginModal()" class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-brand-500/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>Masuk & Mulai Berlangganan</span>
+                    </button>
+                    <button onclick="openGuideModal()" class="w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm rounded-2xl border border-slate-700 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-play text-brand-400"></i>
+                        <span>Pelajari Fitur Unggulan</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-lg"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <h3 class="font-bold text-sm text-white">Inspeksi AI Multimodal 5-Frame</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">AI menganalisis isi video secara utuh dari 5 frame temporal snapshot untuk menghasilkan judul FYP, deskripsi SEO abadi, tag, dan kata kunci produk marketplace.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-lg"><i class="fa-solid fa-users-gear"></i></div>
+                    <h3 class="font-bold text-sm text-white">GIS Multi-Channel Manager</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">Kelola banyak channel YouTube sekaligus via Google Identity Services OAuth dengan fitur silent auto-refresh token tanpa pengalihan halaman.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg"><i class="fa-solid fa-[#000]"></i><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3 class="font-bold text-sm text-white">Single-Device Lock Security</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">Akun terikat aman pada 1 perangkat pembeli sehingga tidak dapat dikloning atau diperjualbelikan ulang tanpa izin admin.</p>
+                </div>
+            </div>
+
+            <!-- Pricing Tier Showcase -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+                <div class="text-center space-y-2">
+                    <h3 class="font-black text-xl text-white">Pilih Paket Lisensi Automator Pro</h3>
+                    <p class="text-xs text-slate-400">Tingkatkan efisiensi upload video YouTube Anda sekarang juga</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                    <!-- Standard Tier -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-1 bg-blue-500/10 text-blue-400 font-bold text-xs rounded-lg border border-blue-500/20">🔹 STANDARD MEMBER</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Akses Model Gemini Standard (`gemini-2.5-flash`)</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Akses 1 Channel Terhubung</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Auto-Rename SEO & Auto-Schedule</li>
+                            </ul>
+                        </div>
+                        <button onclick="openLoginModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700">Pilih Standard</button>
+                    </div>
+
+                    <!-- VIP Tier -->
+                    <div class="bg-slate-950 border-2 border-brand-500/50 rounded-2xl p-5 space-y-4 flex flex-col justify-between relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-brand-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider">REKOMENDASI</div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold text-xs rounded-lg border border-amber-500/30">⭐ VIP MEMBER PRO</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-200">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand-400"></i> Full Access Model Gemini AI Tercepat & Tertinggi</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand-400"></i> Multi-Channel YouTube Unlimited</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand-400"></i> Prioritas Auto-Schedule & Analytics Sync</li>
+                            </ul>
+                        </div>
+                        <button onclick="openLoginModal()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/30">Dapatkan VIP Pro</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN APP WORKSPACE (Hidden for Guests, Revealed after Login) -->
+        <div id="main-app-workspace" class="hidden space-y-6">
 
         <!-- BYOK Settings Panel (Collapsible) -->
         <div id="settings-panel" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4">
@@ -84,48 +263,48 @@
                     <i class="fa-solid fa-key text-brand-500"></i>
                     <h2 class="font-bold text-sm text-slate-100">Pengaturan Kunci Akses & Default Upload (BYOK)</h2>
                 </div>
-                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">100% Client-Side & Gratis</span>
+                <span class="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">GIS Multi-Channel Enabled</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                 <!-- Gemini API Key -->
                 <div class="space-y-1.5">
                     <label class="block font-medium text-slate-300 flex justify-between">
-                        <span>Gemini API Key</span>
+                        <span>1. Gemini API Key</span>
                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 hover:underline">Get Key Gratis <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                     </label>
                     <input type="password" id="input-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
 
-                <!-- Gemini Model Selection -->
-                <div class="space-y-1.5">
-                    <label class="block font-medium text-slate-300 flex justify-between">
-                        <span>Model Gemini AI</span>
-                        <button onclick="fetchAvailableGeminiModels()" class="text-brand-400 hover:underline"><i class="fa-solid fa-rotate text-[10px]"></i> Update List</button>
-                    </label>
-                    <select id="select-gemini-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
-                        <option value="gemini-3.6-flash">gemini-3.6-flash (Terbaru - Rekomendasi)</option>
-                        <option value="gemini-3.8-flash">gemini-3.8-flash (Standard)</option>
-                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Ringan)</option>
-                        <option value="gemini-2.5-flash">gemini-2.5-flash (Cepat)</option>
-                        <option value="gemini-1.5-flash">gemini-1.5-flash (Stabil)</option>
-                    </select>
-                </div>
-
                 <!-- Google OAuth Client ID -->
                 <div class="space-y-1.5">
                     <label class="block font-medium text-slate-300 flex justify-between">
-                        <span>Google Client ID (OAuth 2.0)</span>
+                        <span>2. Google Client ID (OAuth 2.0)</span>
                         <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 hover:underline">Console <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
                     </label>
                     <input type="text" id="input-oauth-client-id" placeholder="12345...apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
                     <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[10px] space-y-1">
-                        <span class="text-slate-400 block font-medium">Salin Redirect URI ini ke Google Cloud Console:</span>
+                        <span class="text-slate-400 block font-medium">Salin JavaScript Origin ini ke Google Cloud Console:</span>
                         <div class="flex items-center justify-between font-mono text-brand-400 bg-slate-900 p-1.5 rounded border border-slate-800">
                             <span id="txt-redirect-uri-display" class="truncate"></span>
                             <button onclick="copyRedirectUriToClipboard()" class="text-slate-300 hover:text-white px-1.5 py-0.5 bg-slate-800 rounded text-[9px] shrink-0 ml-1">Copy</button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Gemini Model Selection (Repositioned below OAuth 2.0) -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-slate-300 flex justify-between">
+                        <span>3. Model Gemini AI (Default: Low Reasoning)</span>
+                        <button onclick="fetchAvailableGeminiModels()" class="text-brand-400 hover:underline"><i class="fa-solid fa-rotate text-[10px]"></i> Update List</button>
+                    </label>
+                    <select id="select-gemini-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="gemini-3.6-flash" selected>gemini-3.6-flash (Default - Penalaran Rendah)</option>
+                        <option value="gemini-3.8-flash">gemini-3.8-flash (Standard)</option>
+                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Ringan)</option>
+                        <option value="gemini-2.5-flash">gemini-2.5-flash (Cepat)</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Stabil)</option>
+                    </select>
                 </div>
 
                 <!-- Default Visibility -->
@@ -169,6 +348,22 @@
                         <option value="true">Ya, dibuat untuk anak-anak</option>
                     </select>
                 </div>
+
+                <!-- Supabase Config (Restricted to Admin Only) -->
+                <div id="supabase-config-card" class="hidden space-y-1.5 col-span-1 md:col-span-2 lg:col-span-3 pt-3 border-t border-slate-800/80">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-database text-purple-400"></i> Konfigurasi Database Supabase Auth (Khusus Administrator)
+                        </h4>
+                        <button onclick="testSupabaseConnection()" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-plug"></i> Tes Koneksi Supabase
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        <input type="text" id="input-supabase-url" placeholder="Supabase URL (https://xyz.supabase.co)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500">
+                        <input type="password" id="input-supabase-key" placeholder="Supabase Anon Key" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500">
+                    </div>
+                </div>
             </div>
 
             <div class="pt-2 flex justify-end">
@@ -206,7 +401,7 @@
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-slate-100">Pilih Berkas Video untuk Mula Inspeksi</h3>
+                    <h3 class="text-base font-bold text-slate-100">Pilih Berkas Video untuk Mulai Inspeksi</h3>
                     <p class="text-xs text-slate-400 max-w-md mx-auto mt-1">Format didukung: MP4, MOV, WEBM, AVI. Berkas diproses 100% lokal di browser Anda.</p>
                 </div>
                 <input type="file" id="file-video-input" accept="video/*" class="hidden" onchange="handleVideoFileSelect(event)">
@@ -249,18 +444,18 @@
         <!-- STEP 2: AI INSPECTION & METADATA -->
         <div id="step-2" class="step-content hidden space-y-5">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <!-- Left: Thumbnail Selection (5 Snapshots) & Auto-Rename -->
+                <!-- Left: Full Aspect Ratio Thumbnail Selection & Auto-Rename -->
                 <div class="space-y-4 lg:col-span-1">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
                         <div class="flex items-center justify-between">
                             <h4 class="font-bold text-xs text-slate-200 uppercase tracking-wider">Snapshot Thumbnail (Frame Awal)</h4>
                             <span class="text-[10px] text-slate-400">Pilih 1 dari 5 frame</span>
                         </div>
-                        <div id="thumbnail-gallery" class="grid grid-cols-5 gap-1.5 bg-slate-950 p-2 rounded-xl border border-slate-800">
-                            <!-- 5 Frame Thumbnails rendered here -->
-                        </div>
-                        <div class="aspect-video bg-black rounded-xl overflow-hidden border border-brand-500/50 relative shadow">
-                            <img id="selected-thumbnail-img" class="w-full h-full object-cover">
+                        <div id="thumbnail-gallery" class="grid grid-cols-5 gap-1.5 bg-slate-950 p-2 rounded-xl border border-slate-800"></div>
+                        
+                        <!-- Full Native Aspect Ratio Container -->
+                        <div id="thumbnail-display-wrapper" class="bg-black rounded-xl overflow-hidden border border-brand-500/50 relative shadow flex items-center justify-center min-h-[220px]">
+                            <img id="selected-thumbnail-img" class="max-h-[380px] w-full object-contain rounded" alt="Thumbnail Preview">
                             <span class="absolute bottom-2 right-2 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">Thumbnail Terpilih</span>
                         </div>
                     </div>
@@ -268,10 +463,10 @@
                     <!-- Auto-Rename Card -->
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-xl">
                         <h4 class="font-bold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                            <i class="fa-solid fa-file-pen text-brand-400"></i> Auto-Rename Berkas Video
+                            <i class="fa-solid fa-file-pen text-brand-400"></i> Auto-Rename Berkas Video (SEO & FYP)
                         </h4>
                         <div class="space-y-2 text-xs">
-                            <label class="block text-slate-400">Rekomendasi Nama Berkas SEO:</label>
+                            <label class="block text-slate-400">Nama Berkas Selaras Judul Video:</label>
                             <input type="text" id="input-renamed-filename" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-brand-500">
                             <button onclick="downloadRenamedVideo()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-download text-emerald-400"></i>
@@ -285,7 +480,7 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 lg:col-span-2 space-y-4 shadow-xl">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-brain text-brand-500"></i> Metadata Hasil AI Gemini
+                            <i class="fa-solid fa-brain text-brand-500"></i> Metadata Hasil AI Gemini (FYP & SEO Abadi)
                         </h4>
                         <button onclick="startAiInspection()" class="text-xs text-brand-400 hover:underline flex items-center gap-1">
                             <i class="fa-solid fa-rotate"></i> Regenerate
@@ -293,30 +488,34 @@
                     </div>
 
                     <div class="space-y-4 text-xs">
-                        <!-- Judul Video dengan Hashtag SEO (Max 100 char) -->
                         <div class="space-y-1.5">
                             <label class="block font-medium text-slate-300 flex justify-between">
-                                <span>Judul Video (Wajib sertakan #shorts & hashtag SEO, max 100 char)</span>
+                                <span>Judul Video (Emotikon + #shorts + Hashtag FYP Abadi, max 100 char)</span>
                                 <span id="title-char-count" class="text-slate-400">0/100</span>
                             </label>
-                            <input type="text" id="input-ai-title" maxlength="100" oninput="updateCharCount()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 font-semibold focus:outline-none focus:border-brand-500">
+                            <input type="text" id="input-ai-title" maxlength="100" oninput="updateCharCount(); syncFilenameWithTitle();" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 font-semibold focus:outline-none focus:border-brand-500">
                         </div>
 
-                        <!-- Tag Produk / Link Afiliasi -->
                         <div class="space-y-1.5">
-                            <label class="block font-medium text-slate-300">Tag Produk / Link Afiliasi / Toko (Otomatis disisipkan ke Deskripsi)</label>
-                            <input type="text" id="input-product-tag" placeholder="Contoh: Link Beli Sepatu: https://tokopedia.com/xyz" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                            <label class="block font-medium text-slate-300">Tag Produk / Link Afiliasi / Toko (Disisipkan ke Deskripsi)</label>
+                            <input type="text" id="input-product-tag" placeholder="Contoh: Link Beli: https://tokopedia.com/xyz" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
                         </div>
 
-                        <!-- Deskripsi -->
                         <div class="space-y-1.5">
-                            <label class="block font-medium text-slate-300">Deskripsi Lengkap YouTube</label>
+                            <label class="block font-medium text-amber-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                                <span>Saran Keyword Pencarian Produk Marketplace (Referensiku Cari Produk di Shopee/Tokopedia):</span>
+                            </label>
+                            <textarea id="input-product-keywords-suggest" rows="2" readonly class="w-full bg-slate-950 border border-amber-500/30 rounded-xl p-3 text-amber-200/90 font-mono text-[11px] focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block font-medium text-slate-300">Deskripsi Lengkap YouTube (Timestamp & Hashtag FYP SEO Abadi)</label>
                             <textarea id="input-ai-description" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
                         </div>
 
-                        <!-- Tags YouTube -->
                         <div class="space-y-1.5">
-                            <label class="block font-medium text-slate-300">Tag YouTube (Dipisahkan Koma)</label>
+                            <label class="block font-medium text-slate-300">Tag YouTube (Dipisahkan Koma - SEO & FYP Abadi)</label>
                             <input type="text" id="input-ai-tags" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-brand-500">
                         </div>
                     </div>
@@ -344,24 +543,28 @@
                     <span id="oauth-user-status-text" class="text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">Belum Terkoneksi OAuth</span>
                 </div>
 
-                <!-- Multi-Channel Selector & OAuth Login -->
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-300">Pilih Channel YouTube Tujuan</label>
-                            <p class="text-[11px] text-slate-400">Dukungan Multi-Channel YouTube aktif</p>
+                            <p class="text-[11px] text-slate-400">VIP & Admin dapat mengelola banyak channel bersamaan</p>
                         </div>
-                        <button onclick="startGoogleOAuthLogin()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-2">
-                            <i class="fa-brands fa-google text-red-400"></i>
-                            <span>+ Tambah Akun / Channel</span>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="verifyAndRefreshActiveOAuthToken()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-medium rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>Silent Auto-Refresh</span>
+                            </button>
+                            <button onclick="startGoogleOAuthLogin('consent')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl transition flex items-center gap-1.5 shadow">
+                                <i class="fa-brands fa-google"></i>
+                                <span>+ Tambah / Konek Channel</span>
+                            </button>
+                        </div>
                     </div>
                     <select id="select-channel-account" onchange="handleChannelSelectChange()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
-                        <option value="">-- Pilih Akun / Login Google Terlebih Dahulu --</option>
+                        <option value="">-- Hubungkan Channel YouTube Terlebih Dahulu --</option>
                     </select>
                 </div>
 
-                <!-- Privacy & Datetime Schedule Form -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div class="space-y-1.5">
                         <label class="block font-medium text-slate-300">Visibilitas Unggah</label>
@@ -379,7 +582,10 @@
                     </div>
 
                     <div class="space-y-1.5">
-                        <label class="block font-medium text-slate-300">Kategori YouTube</label>
+                        <label class="block font-medium text-slate-300 flex justify-between">
+                            <span>Kategori YouTube</span>
+                            <span class="text-brand-400 text-[10px] font-normal">*Auto-set dari AI</span>
+                        </label>
                         <select id="upload-category-id" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
                             <option value="17">Olahraga</option>
                             <option value="25">Berita & Politik</option>
@@ -408,7 +614,6 @@
                     </div>
                 </div>
 
-                <!-- Resumable Upload Progress Bar -->
                 <div id="upload-progress-container" class="hidden space-y-2 bg-slate-950 p-4 rounded-xl border border-slate-800">
                     <div class="flex justify-between text-xs">
                         <span id="upload-status-text" class="text-brand-400 font-medium">Mengunggah ke YouTube API...</span>
@@ -431,124 +636,75 @@
             </div>
         </div>
 
-        <!-- STEP 4: COLLECTION & YT STUDIO HP LAYOUT -->
+        <!-- STEP 4: COLLECTION & RESPONSIVE GRID -->
         <div id="step-4" class="step-content hidden space-y-5">
-            <!-- Stats Overview Bar -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Total Diunggah</span>
-                        <span class="text-lg font-bold text-slate-100" id="stat-total-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center text-base"><i class="fa-solid fa-video"></i></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Total Shorts (#shorts)</span>
-                        <span class="text-lg font-bold text-red-400" id="stat-shorts-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center text-base"><i class="fa-solid fa-bolt"></i></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Video Reguler</span>
-                        <span class="text-lg font-bold text-blue-400" id="stat-videos-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-base"><i class="fa-solid fa-film"></i></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between">
-                    <div>
-                        <span class="block text-[11px] text-slate-400">Dijadwalkan</span>
-                        <span class="text-lg font-bold text-amber-400" id="stat-scheduled-count">0</span>
-                    </div>
-                    <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-base"><i class="fa-solid fa-clock"></i></div>
-                </div>
-            </div>
-
-            <!-- YT Studio HP Style Collection List Section -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-brands fa-youtube text-red-500 text-lg"></i>
-                        <h3 class="font-bold text-slate-200 text-sm">Daftar Konten Channel (Tampilan YouTube Studio)</h3>
-                    </div>
-
-                    <!-- Quick Filter Pills & Modal Trigger -->
-                    <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
-                        <button id="btn-fetch-live-videos" onclick="fetchCurrentChannelLiveVideos()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-full text-xs font-bold border border-brand-500 transition flex items-center gap-1.5 shrink-0">
-                            <i class="fa-solid fa-rotate"></i>
-                            <span>Sync Live YouTube</span>
-                        </button>
-                        <button id="btn-open-yt-filter" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium border border-slate-700 transition flex items-center gap-1.5 shrink-0">
-                            <i class="fa-solid fa-sliders text-brand-400"></i>
-                            <span>Filter</span>
-                        </button>
-                        <button onclick="quickFilterSort('newest')" class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-full text-xs border border-slate-800 transition shrink-0 flex items-center gap-1">
-                            <span>Urutkan: Terbaru</span>
-                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                        </button>
-                        <button onclick="quickFilterVisibility('scheduled')" class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-amber-400 rounded-full text-xs border border-slate-800 transition shrink-0 flex items-center gap-1">
-                            <i class="fa-solid fa-clock text-[10px]"></i>
-                            <span>Terjadwal</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Active Filter Indicator Bar -->
-                <div id="active-filter-tags" class="hidden flex flex-wrap gap-2 text-[11px] items-center bg-slate-950 p-2 rounded-xl border border-slate-800">
-                    <span class="text-slate-400 font-medium">Filter Aktif:</span>
-                    <div id="active-filter-chips" class="flex flex-wrap gap-1.5"></div>
-                    <button onclick="resetAllFilters()" class="text-brand-400 hover:underline ml-auto font-medium">Reset Filter</button>
-                </div>
-
-                <!-- Empty State -->
-                <div id="history-empty-state" class="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3 text-xl">
-                        <i class="fa-solid fa-folder-open"></i>
-                    </div>
-                    <p class="text-xs text-slate-400">Belum ada koleksi video/shorts yang diunggah atau sesuai filter.</p>
-                </div>
-
-                <!-- YT Studio HP Grid / List Container -->
-                <div id="history-vertical-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
-                    <!-- Cards will be dynamically rendered here matching YouTube Studio mobile layout -->
-                </div>
-            </div>
-        </div>
+        </div> <!-- End of #main-app-workspace -->
 
     </main>
 
-    <!-- Modal Instructions & Settings Guide -->
+    <!-- Modal Instructions & Beginner Step-by-Step Tutorial -->
     <div id="modal-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative">
             <button onclick="closeGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
-            <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
-                <i class="fa-solid fa-book-open text-brand-500"></i> Panduan Setup Kunci Akses (100% Gratis)
+            <h3 class="font-bold text-base text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
+                <i class="fa-solid fa-book-open text-brand-500"></i> Panduan Step-by-Step Setup Kunci Akses (Orang Awam Friendly)
             </h3>
-            <div class="space-y-3 text-xs text-slate-300 overflow-y-auto max-h-[60vh] pr-2">
-                <p>Tools ini didesain 100% client-side tanpa server berbayar. Gunakan API Key pribadi Anda:</p>
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-brand-400">1. Cara Dapatkan Gemini API Key Gratis:</h4>
-                    <ol class="list-decimal pl-4 space-y-1">
-                        <li>Buka <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 underline">Google AI Studio</a>.</li>
-                        <li>Klik <b>Get API key</b> -> <b>Create API key</b>.</li>
-                        <li>Salin kunci tersebut lalu tempel di kolom Pengaturan Aplikasi.</li>
+            
+            <div class="space-y-4 text-xs text-slate-300 overflow-y-auto max-h-[65vh] pr-2 scrollbar-none">
+                
+                <!-- Tutorial 1: Gemini API Key -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-brand-400 text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-key"></i> LANGKAH 1: Dapatkan Gemini API Key (Gratis)
+                    </h4>
+                    <ol class="list-decimal pl-4 space-y-1.5 text-slate-300">
+                        <li>Buka Google AI Studio di: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-brand-400 underline font-bold">aistudio.google.com/app/apikey</a></li>
+                        <li>Login menggunakan akun Google / Gmail Anda.</li>
+                        <li>Klik tombol biru <b>"Create API Key"</b>.</li>
+                        <li>Salin kode kunci yang muncul (diawali dengan kata <code>AIzaSy...</code>).</li>
+                        <li>Buka menu <b>Pengaturan API</b> di web ini lalu tempelkan pada kolom <b>Gemini API Key</b>.</li>
                     </ol>
                 </div>
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-brand-400">2. Cara Dapatkan Google Client ID (OAuth):</h4>
-                    <ol class="list-decimal pl-4 space-y-1">
-                        <li>Buka <a href="https://console.cloud.google.com/" target="_blank" class="text-brand-400 underline">Google Cloud Console</a>.</li>
-                        <li>Aktifkan <b>YouTube Data API v3</b> di bagian <i>APIs & Services</i>.</li>
-                        <li>Buat <b>OAuth 2.0 Client ID</b> (Web application).</li>
-                        <li>Tambahkan URL GitHub Pages Anda di <b>Authorized JavaScript origins</b>.</li>
+
+                <!-- Tutorial 2: Google OAuth Client ID & JavaScript Origin -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-purple-400 text-xs flex items-center gap-1.5">
+                        <i class="fa-brands fa-google"></i> LANGKAH 2: Dapatkan Google Client ID & Salin JavaScript Origin
+                    </h4>
+                    <ol class="list-decimal pl-4 space-y-1.5 text-slate-300">
+                        <li>Buka Google Cloud Console di: <a href="https://console.cloud.google.com/" target="_blank" class="text-purple-400 underline font-bold">console.cloud.google.com</a></li>
+                        <li>Buat project baru atau pilih project yang sudah ada.</li>
+                        <li>Di menu pencarian atas, ketik <b>"YouTube Data API v3"</b> lalu klik <b>ENABLE (Aktifkan)</b>.</li>
+                        <li>Masuk ke menu <b>APIs & Services</b> &gt; <b>Credentials</b>.</li>
+                        <li>Klik <b>Create Credentials</b> &gt; Pilih <b>OAuth Client ID</b>.</li>
+                        <li>Pilih <i>Application type</i>: <b>Web Application</b>.</li>
+                        <li>Di bagian <b>"Authorized JavaScript origins"</b>, klik <b>+ ADD URI</b>, lalu tempelkan URL Web Anda:
+                            <div class="mt-1 font-mono text-brand-400 bg-slate-900 p-2 rounded border border-slate-800 flex items-center justify-between">
+                                <span id="tutorial-uri-display" class="truncate"></span>
+                                <button onclick="copyRedirectUriToClipboard()" class="text-slate-300 px-2 py-0.5 bg-slate-800 rounded text-[10px]">Copy</button>
+                            </div>
+                        </li>
+                        <li>Klik **CREATE** lalu salin string **Client ID** (diawali angka dan diakhiri <code>.apps.googleusercontent.com</code>).</li>
+                        <li>Tempelkan ke kolom <b>Google Client ID</b> di Pengaturan API web ini.</li>
                     </ol>
                 </div>
+
+                <!-- Tutorial 3: Single Device Lock Policy -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved"></i> KEAMANAN LISENSI: System Single-Device Lock
+                    </h4>
+                    <p class="text-slate-400 leading-relaxed">
+                        Aplikasi ini dilindungi oleh lisensi perangkat murni. Setiap akun pembeli terikat secara unik pada **1 perangkat (HP/Laptop)** pertama yang digunakan untuk login. Jika pengguna lain mencoba menggunakan username & password tersebut dari perangkat berbeda, akses akan ditolak secara otomatis oleh sistem.
+                    </p>
+                </div>
+
             </div>
+
             <div class="pt-2 flex justify-end">
-                <button onclick="closeGuideModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl">
+                <button onclick="closeGuideModal()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow">
                     Mengerti & Tutup
                 </button>
             </div>
@@ -557,279 +713,271 @@
 
     <!-- YouTube Studio Filter Modal Sheet -->
     <div id="modal-yt-filter" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900 sticky top-0 z-10">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-brand-500"></i>
-                    <h3 class="font-bold text-slate-100 text-base">Filter Konten</h3>
-                </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-400"></i> Filter & Urutkan Konten (YT Studio HP)
+                </h3>
                 <button onclick="closeYtFilterModal()" class="text-slate-400 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            
-            <div class="p-5 overflow-y-auto space-y-6 text-xs text-slate-200">
+
+            <div class="space-y-4 text-xs">
                 <!-- Urutkan menurut -->
                 <div class="space-y-2">
-                    <h4 class="font-bold text-slate-100 text-sm">Urutkan menurut</h4>
-                    <div class="space-y-2 pl-1">
-                        <label class="flex items-center gap-2.5 cursor-pointer">
-                            <input type="radio" name="filter_sort_by" value="newest" checked class="accent-brand-500">
+                    <label class="font-bold text-slate-300 block">Urutkan Menurut</label>
+                    <div class="space-y-1.5 pl-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="yt-filter-sort" value="terbaru" checked class="text-brand-500 focus:ring-0">
                             <span>Terbaru (default)</span>
                         </label>
-                        <label class="flex items-center gap-2.5 cursor-pointer">
-                            <input type="radio" name="filter_sort_by" value="most_viewed" class="accent-brand-500">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="yt-filter-sort" value="views" class="text-brand-500 focus:ring-0">
                             <span>Paling banyak ditonton</span>
                         </label>
                     </div>
                 </div>
 
-                <hr class="border-slate-800">
-
                 <!-- Visibilitas -->
-                <div class="space-y-2">
-                    <h4 class="font-bold text-slate-100 text-sm">Visibilitas</h4>
-                    <div class="grid grid-cols-2 gap-2.5 pl-1">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="public" class="rounded accent-brand-500">
-                            <span>Publik</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="private" class="rounded accent-brand-500">
-                            <span>Pribadi</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="unlisted" class="rounded accent-brand-500">
-                            <span>Tidak publik</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="filter_vis" value="scheduled" class="rounded accent-brand-500">
-                            <span>Terjadwal</span>
-                        </label>
+                <div class="space-y-2 border-t border-slate-800 pt-3">
+                    <label class="font-bold text-slate-300 block">Visibilitas</label>
+                    <div class="grid grid-cols-2 gap-2 pl-1">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="public" class="rounded border-slate-700 text-brand-500"> <span>Publik</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="private" class="rounded border-slate-700 text-brand-500"> <span>Pribadi</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="unlisted" class="rounded border-slate-700 text-brand-500"> <span>Tidak publik</span></label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="yt-filter-vis" value="scheduled" class="rounded border-slate-700 text-brand-500"> <span>Terjadwal</span></label>
                     </div>
                 </div>
 
-                <hr class="border-slate-800">
-
                 <!-- Penayangan -->
-                <div class="space-y-2.5">
-                    <h4 class="font-bold text-slate-100 text-sm">Penayangan</h4>
-                    <div class="flex gap-4 pl-1">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="filter_views_cond" value="greater" checked class="accent-brand-500">
-                            <span>Lebih dari</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="filter_views_cond" value="less" class="accent-brand-500">
-                            <span>Kurang dari</span>
-                        </label>
+                <div class="space-y-2 border-t border-slate-800 pt-3">
+                    <label class="font-bold text-slate-300 block">Jumlah Penayangan</label>
+                    <div class="flex items-center gap-3">
+                        <select id="yt-filter-views-op" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
+                            <option value="gt">Lebih dari</option>
+                            <option value="lt">Kurang dari</option>
+                        </select>
+                        <input type="number" id="yt-filter-views-val" placeholder="Masukkan angka" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200">
                     </div>
-                    <input type="number" id="filter-views-val" placeholder="Masukkan angka" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
             </div>
 
-            <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-                <button onclick="applyYtFilterModal()" class="w-full py-2.5 bg-slate-200 hover:bg-white text-slate-900 rounded-xl text-xs font-bold transition shadow">
-                    Terapkan
+            <div class="pt-3 border-t border-slate-800 flex justify-between gap-2">
+                <button onclick="resetAllFilters()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium">Reset Filter</button>
+                <button onclick="applyYtFilterModal()" class="px-6 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow">Terapkan Filter</button>
+    <!-- Supabase Login Modal (Enhanced with Enter key & Loading Spinner) -->
+    <div id="modal-supabase-auth" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative animate-slide-up">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="text-center space-y-1.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-pink-600 text-white flex items-center justify-center mx-auto text-xl shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <h3 class="font-bold text-base text-slate-100">Login Member Automator</h3>
+                <p class="text-xs text-slate-400">Masukkan Username & Password akun Anda</p>
+            </div>
+            <div class="space-y-3 text-xs">
+                <input type="text" id="auth-input-email" onkeydown="if(event.key==='Enter') handleSupabaseLogin()" placeholder="Username / Email (Cth: admin, vip, standard)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                <input type="password" id="auth-input-password" onkeydown="if(event.key==='Enter') handleSupabaseLogin()" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                
+                <button id="btn-submit-auth" onclick="handleSupabaseLogin()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2">
+                    <span id="txt-login-btn">Masuk Member Pro</span>
+                    <i id="spin-login-btn" class="fa-solid fa-circle-notch animate-spin hidden"></i>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div id="modal-admin-dashboard" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-5xl w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear text-purple-400 text-base"></i>
+                    <h3 class="font-bold text-base text-slate-100">Dashboard Admin & User Management Pro</h3>
+                </div>
+                <button onclick="loadAdminUserList()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate"></i> Refresh Data
+                </button>
+            </div>
+
+            <!-- Form Tambah / Edit User -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <h4 class="font-bold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-plus text-emerald-400"></i> <span id="admin-form-title">Tambah Member Baru</span>
+                </h4>
+                <input type="hidden" id="admin-edit-index" value="-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div class="space-y-1">
+                        <label class="text-slate-400">Username / Email</label>
+                        <input type="text" id="admin-input-username" placeholder="Cth: budi_vip" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-slate-400">Sandi (Password)</label>
+                        <input type="text" id="admin-input-password" placeholder="Password akun" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-slate-400">Tipe Lisensi (Role)</label>
+                        <select id="admin-input-role" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="vip">⭐ VIP Member (Full Access)</option>
+                            <option value="standard">🔹 Standard Member</option>
+                            <option value="admin">👑 Admin</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-slate-400">Masa Aktif (Expired Date)</label>
+                        <input type="datetime-local" id="admin-input-expired" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-500">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button id="admin-btn-cancel-edit" onclick="resetAdminForm()" class="hidden px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">Batal</button>
+                    <button onclick="saveAdminUser()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> <span id="admin-btn-save-text">Simpan & Buat User</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Monitoring & Daftar User -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider">Monitoring & Daftar Seluruh Member (<span id="admin-total-users">0</span>)</h4>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 font-bold border-b border-slate-800 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3">Username</th>
+                                <th class="p-3">Sandi (Password)</th>
+                                <th class="p-3">Role Lisensi</th>
+                                <th class="p-3">Expired Date</th>
+                                <th class="p-3">Status Monitoring</th>
+                                <th class="p-3 text-right">Aksi & Pengaturan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-user-table-body" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- MAIN CLIENT JAVASCRIPT LOGIC -->
     <script>
-        // Global App State
+        // Global State & Elements Storage
+        const elements = {};
         const state = {
             geminiApiKey: '',
             selectedGeminiModel: 'gemini-3.6-flash',
             oauthClientId: '',
-            defaultPrivacy: 'scheduled',
-            defaultCategory: '17',
-            defaultKids: 'false',
             settingsCollapsed: true,
-            googleAccessToken: null,
-            connectedChannels: [],
-            activeChannelId: null,
-            liveChannelVideos: [],
-            videoHistory: [],
             selectedFile: null,
-            renamedFile: null,
             thumbnails: [],
             selectedThumbnailIndex: 0,
-            videoMeta: { duration: 0, width: 0, height: 0, type: '' },
-            aiResults: { title: '', description: '', tags: '', suggestedFilename: '' },
-            filterConfig: {
-                sortBy: 'newest',
+            snapshotBase64: null,
+            supabase: { role: 'guest', expiredAt: null, username: '' },
+            connectedChannels: [],
+            activeChannelId: null,
+            renamedFile: null,
+            videoHistory: [],
+            ytFilters: {
+                sortBy: 'terbaru',
                 visibility: [],
-                viewsCondition: 'greater',
-                viewsValue: null
+                viewsOp: 'gt',
+                viewsVal: null
             }
         };
 
-        const elements = {};
-
-        function initDOM() {
-            elements.inputGeminiKey = document.getElementById('input-gemini-key');
-            elements.selectGeminiModel = document.getElementById('select-gemini-model');
-            elements.inputOauthClientId = document.getElementById('input-oauth-client-id');
-            elements.selectDefaultPrivacy = document.getElementById('select-default-privacy');
-            elements.selectDefaultCategory = document.getElementById('select-default-category');
-            elements.selectDefaultKids = document.getElementById('select-default-kids');
-            elements.settingsPanel = document.getElementById('settings-panel');
-            elements.txtToggleSettings = document.getElementById('txt-toggle-settings');
-            
-            elements.videoPreviewCard = document.getElementById('video-preview-card');
-            elements.videoPreview = document.getElementById('video-preview');
-            elements.metaFileName = document.getElementById('meta-file-name');
-            elements.metaFileSize = document.getElementById('meta-file-size');
-            elements.metaDuration = document.getElementById('meta-duration');
-            elements.metaResolution = document.getElementById('meta-resolution');
-
-            elements.thumbnailGallery = document.getElementById('thumbnail-gallery');
-            elements.selectedThumbnailImg = document.getElementById('selected-thumbnail-img');
-            elements.inputRenamedFilename = document.getElementById('input-renamed-filename');
-            elements.inputAiTitle = document.getElementById('input-ai-title');
-            elements.titleCharCount = document.getElementById('title-char-count');
-            elements.inputAiDescription = document.getElementById('input-ai-description');
-            elements.inputAiTags = document.getElementById('input-ai-tags');
-            elements.inputProductTag = document.getElementById('input-product-tag');
-
-            elements.stepContents = document.querySelectorAll('.step-content');
-            elements.stepTabs = document.querySelectorAll('.step-tab');
-
-            elements.selectChannelAccount = document.getElementById('select-channel-account');
-            elements.oauthUserStatusText = document.getElementById('oauth-user-status-text');
-            elements.uploadPrivacy = document.getElementById('upload-privacy');
-            elements.uploadPublishAt = document.getElementById('upload-publish-at');
-            elements.uploadCategoryId = document.getElementById('upload-category-id');
-            elements.uploadMadeForKids = document.getElementById('upload-made-for-kids');
-            elements.uploadProgressContainer = document.getElementById('upload-progress-container');
-            elements.uploadProgressBar = document.getElementById('upload-progress-bar');
-            elements.uploadPercentage = document.getElementById('upload-percentage');
-
-            elements.statTotalCount = document.getElementById('stat-total-count');
-            elements.statShortsCount = document.getElementById('stat-shorts-count');
-            elements.statVideosCount = document.getElementById('stat-videos-count');
-            elements.statScheduledCount = document.getElementById('stat-scheduled-count');
-            elements.historyVerticalContainer = document.getElementById('history-vertical-container');
-            elements.historyEmptyState = document.getElementById('history-empty-state');
-        }
-
-        function getCleanRedirectUri() {
-            let uri = window.location.origin + window.location.pathname;
-            if (uri.endsWith('/index.html')) {
-                uri = uri.slice(0, -10);
+        // Persistent Single-Device Fingerprint Lock Identifier
+        function getOrCreateDeviceId() {
+            let deviceId = localStorage.getItem('yt_automator_device_id');
+            if (!deviceId) {
+                deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+                localStorage.setItem('yt_automator_device_id', deviceId);
             }
-            if (!uri.endsWith('/')) {
-                uri += '/';
-            }
-            return uri;
+            return deviceId;
         }
 
-        function copyRedirectUriToClipboard() {
-            const uri = getCleanRedirectUri();
-            const tempInput = document.createElement('input');
-            tempInput.value = uri;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            showToast('Redirect URI berhasil disalin ke clipboard!', 'success');
+        const mockUsersList = [
+            { id: '1', username: 'admin', password: '123', role: 'admin', expired_at: '2030-01-01T00:00', device_id: null },
+            { id: '2', username: 'vip_user', password: 'vip2026', role: 'vip', expired_at: '2026-12-31T23:59', device_id: null },
+            { id: '3', username: 'stand_user', password: 'std123', role: 'standard', expired_at: '2026-06-15T12:00', device_id: null }
+        ];
+
+        // Mobile Hamburger Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-dropdown-menu');
+            if (menu) menu.classList.toggle('hidden');
         }
 
-        function loadSettings() {
-            state.geminiApiKey = localStorage.getItem('yt_automator_gemini_key') || '';
-            state.selectedGeminiModel = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
-            state.oauthClientId = localStorage.getItem('yt_automator_oauth_id') || '';
-            state.defaultPrivacy = localStorage.getItem('yt_automator_def_privacy') || 'scheduled';
-            state.defaultCategory = localStorage.getItem('yt_automator_def_category') || '17';
-            state.defaultKids = localStorage.getItem('yt_automator_def_kids') || 'false';
-
-            if (elements.inputGeminiKey) elements.inputGeminiKey.value = state.geminiApiKey;
-            if (elements.selectGeminiModel) elements.selectGeminiModel.value = state.selectedGeminiModel;
-            if (elements.inputOauthClientId) elements.inputOauthClientId.value = state.oauthClientId;
-            if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = state.defaultPrivacy;
-            if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = state.defaultCategory;
-            if (elements.selectDefaultKids) elements.selectDefaultKids.value = state.defaultKids;
-
-            const redirectUriDisplay = document.getElementById('txt-redirect-uri-display');
-            if (redirectUriDisplay) {
-                redirectUriDisplay.textContent = getCleanRedirectUri();
-            }
-
-            if (elements.uploadPrivacy) elements.uploadPrivacy.value = state.defaultPrivacy;
-            if (elements.uploadCategoryId) elements.uploadCategoryId.value = state.defaultCategory;
-            if (elements.uploadMadeForKids) elements.uploadMadeForKids.value = state.defaultKids;
-
-            toggleScheduleDatePicker();
+        function scrollToHome() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function saveSettings() {
-            state.geminiApiKey = elements.inputGeminiKey.value.trim();
-            state.selectedGeminiModel = elements.selectGeminiModel.value;
-            state.oauthClientId = elements.inputOauthClientId.value.trim();
-            state.defaultPrivacy = elements.selectDefaultPrivacy.value;
-            state.defaultCategory = elements.selectDefaultCategory.value;
-            state.defaultKids = elements.selectDefaultKids.value;
+        // UI & Modal Helpers
+        function openLoginModal() {
+            const m = document.getElementById('modal-supabase-auth');
+            if (m) m.classList.remove('hidden');
+        }
+        function closeLoginModal() {
+            const m = document.getElementById('modal-supabase-auth');
+            if (m) m.classList.add('hidden');
+        }
 
-            localStorage.setItem('yt_automator_gemini_key', state.geminiApiKey);
-            localStorage.setItem('yt_automator_gemini_model', state.selectedGeminiModel);
-            localStorage.setItem('yt_automator_oauth_id', state.oauthClientId);
-            localStorage.setItem('yt_automator_def_privacy', state.defaultPrivacy);
-            localStorage.setItem('yt_automator_def_category', state.defaultCategory);
-            localStorage.setItem('yt_automator_def_kids', state.defaultKids);
+        function openAdminModal() {
+            const m = document.getElementById('modal-admin-dashboard');
+            if (m) m.classList.remove('hidden');
+            loadAdminUserList();
+        }
+        function closeAdminModal() {
+            const m = document.getElementById('modal-admin-dashboard');
+            if (m) m.classList.add('hidden');
+        }
 
-            showToast('Pengaturan berhasil disimpan!', 'success');
-            toggleSettingsPanel();
+        function openGuideModal() { const m = document.getElementById('modal-guide'); if (m) m.classList.remove('hidden'); }
+        function closeGuideModal() { const m = document.getElementById('modal-guide'); if (m) m.classList.add('hidden'); }
+
+        function openYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if (m) m.classList.remove('hidden'); }
+        function closeYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if (m) m.classList.add('hidden'); }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800 border border-slate-700';
+            const iconClass = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 animate-slide-up pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
         }
 
         function toggleSettingsPanel() {
+            const panel = document.getElementById('settings-panel');
+            const txt = document.getElementById('txt-toggle-settings');
+            if (!panel) return;
             state.settingsCollapsed = !state.settingsCollapsed;
             if (state.settingsCollapsed) {
-                elements.settingsPanel.classList.add('hidden');
-                elements.txtToggleSettings.textContent = 'Buka Pengaturan API';
+                panel.classList.add('hidden');
+                if (txt) txt.textContent = 'Buka Pengaturan API';
             } else {
-                elements.settingsPanel.classList.remove('hidden');
-                elements.txtToggleSettings.textContent = 'Sembunyikan Pengaturan';
+                panel.classList.remove('hidden');
+                if (txt) txt.textContent = 'Tutup Pengaturan API';
             }
         }
 
-        // Fetch List of Gemini Models automatically
-        async function fetchAvailableGeminiModels() {
-            if (!state.geminiApiKey) {
-                showToast('Masukkan Gemini API Key terlebih dahulu!', 'error');
-                return;
-            }
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${state.geminiApiKey}`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                const models = (data.models || []).filter(m => m.name.includes('flash') || m.name.includes('pro'));
-                if (models.length > 0 && elements.selectGeminiModel) {
-                    elements.selectGeminiModel.innerHTML = '';
-                    models.forEach(m => {
-                        const mName = m.name.replace('models/', '');
-                        elements.selectGeminiModel.innerHTML += `<option value="${mName}">${mName}</option>`;
-                    });
-                    showToast(`List ${models.length} model Gemini berhasil diupdate!`, 'success');
-                }
-            } catch (err) {
-                showToast(`Gagal update model: ${err.message}`, 'error');
-            }
-        }
-
-        // Navigation Switcher
         function switchStep(stepNum) {
-            elements.stepContents.forEach((el, index) => {
-                if (index + 1 === stepNum) {
-                    el.classList.remove('hidden');
-                } else {
-                    el.classList.add('hidden');
-                }
-            });
+            document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`step-${stepNum}`);
+            if (target) target.classList.remove('hidden');
 
-            elements.stepTabs.forEach((tab, index) => {
-                if (index + 1 === stepNum) {
+            document.querySelectorAll('.step-tab').forEach((tab, idx) => {
+                if (idx + 1 === stepNum) {
                     tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow';
                 } else {
                     tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200';
@@ -841,391 +989,1066 @@
             }
         }
 
-        // Step 1: Video File Selection & Frame Snapshots
-        function handleVideoFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            state.selectedFile = file;
-            state.renamedFile = file;
-
-            elements.metaFileName.textContent = file.name;
-            elements.metaFileSize.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
-
-            const url = URL.createObjectURL(file);
-            elements.videoPreview.src = url;
-            elements.videoPreviewCard.classList.remove('hidden');
-
-            elements.videoPreview.onloadedmetadata = () => {
-                state.videoMeta.duration = elements.videoPreview.duration;
-                state.videoMeta.width = elements.videoPreview.videoWidth;
-                state.videoMeta.height = elements.videoPreview.videoHeight;
-                state.videoMeta.type = file.type;
-
-                const dur = elements.videoPreview.duration;
-                const m = Math.floor(dur / 60);
-                const s = Math.floor(dur % 60);
-                elements.metaDuration.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-                elements.metaResolution.textContent = `${elements.videoPreview.videoWidth} x ${elements.videoPreview.videoHeight}`;
-
-                captureThumbnailSnapshots();
-            };
-        }
-
-        // Capture exactly 5 frame snapshots from intro/early timestamps (0.5s, 1.5s, 3s, 5s, 8s)
-        function captureThumbnailSnapshots() {
-            state.thumbnails = [];
-            elements.thumbnailGallery.innerHTML = '';
-            
-            const tempVid = document.createElement('video');
-            tempVid.src = elements.videoPreview.src;
-            tempVid.muted = true;
-            
-            const timestamps = [0.5, 1.5, 3.0, 5.0, 8.0];
-            let index = 0;
-
-            tempVid.onloadedmetadata = () => {
-                const processNext = () => {
-                    if (index >= timestamps.length) return;
-                    tempVid.currentTime = Math.min(timestamps[index], tempVid.duration - 0.1);
-                };
-
-                tempVid.onseeked = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = tempVid.videoWidth || 640;
-                    canvas.height = tempVid.videoHeight || 360;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
-                    
-                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
-                    state.thumbnails.push(base64);
-
-                    const thImg = document.createElement('img');
-                    thImg.src = base64;
-                    thImg.className = `w-full aspect-square object-cover rounded-lg border-2 cursor-pointer transition ${index === 0 ? 'border-brand-500 scale-105' : 'border-slate-800 opacity-70 hover:opacity-100'}`;
-                    const currentIndex = index;
-                    thImg.onclick = () => selectThumbnail(currentIndex);
-                    elements.thumbnailGallery.appendChild(thImg);
-
-                    if (index === 0) selectThumbnail(0);
-
-                    index++;
-                    processNext();
-                };
-
-                processNext();
-            };
-        }
-
-        function selectThumbnail(idx) {
-            state.selectedThumbnailIndex = idx;
-            state.snapshotBase64 = state.thumbnails[idx];
-            elements.selectedThumbnailImg.src = state.snapshotBase64;
-
-            const imgs = elements.thumbnailGallery.querySelectorAll('img');
-            imgs.forEach((img, i) => {
-                if (i === idx) {
-                    img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-brand-500 scale-105 shadow';
-                } else {
-                    img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-slate-800 opacity-70 hover:opacity-100';
-                }
-            });
-        }
-
-        // Step 2: Gemini AI Inspection with Fallback Engine
-        async function startAiInspection() {
-            if (!state.selectedFile) {
-                showToast('Pilih video terlebih dahulu!', 'error');
-                return;
+        // Multi-Channel State & Connected Channel Management
+        function loadConnectedChannels() {
+            try {
+                const saved = localStorage.getItem('yt_automator_connected_channels');
+                state.connectedChannels = saved ? JSON.parse(saved) : [];
+                renderChannelDropdowns();
+            } catch (e) {
+                state.connectedChannels = [];
             }
-            if (!state.geminiApiKey) {
-                showToast('Masukkan Gemini API Key di menu Pengaturan!', 'error');
+        }
+
+        function saveConnectedChannels() {
+            try {
+                localStorage.setItem('yt_automator_connected_channels', JSON.stringify(state.connectedChannels));
+                renderChannelDropdowns();
+            } catch (e) {}
+        }
+
+        function renderChannelDropdowns() {
+            const step3Select = document.getElementById('select-channel-account');
+            const step4Select = document.getElementById('select-history-channel-filter');
+
+            if (step3Select) {
+                step3Select.innerHTML = '';
+                if (state.connectedChannels.length === 0) {
+                    step3Select.innerHTML = '<option value="">-- Hubungkan Channel YouTube Terlebih Dahulu --</option>';
+                } else {
+                    state.connectedChannels.forEach(ch => {
+                        const opt = document.createElement('option');
+                        opt.value = ch.id;
+                        opt.textContent = `${ch.title} (${ch.customUrl || ch.id})`;
+                        step3Select.appendChild(opt);
+                    });
+                }
+            }
+
+            if (step4Select) {
+                const currentVal = step4Select.value || 'all';
+                step4Select.innerHTML = '<option value="all">🌐 Semua Channel Terkoneksi</option>';
+                state.connectedChannels.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = `📺 ${ch.title}`;
+                    step4Select.appendChild(opt);
+                });
+                step4Select.value = currentVal;
+            }
+
+            // Update OAuth status badge text
+            const oauthStatus = document.getElementById('oauth-user-status-text');
+            if (oauthStatus) {
+                if (state.connectedChannels.length > 0) {
+                    oauthStatus.textContent = `${state.connectedChannels.length} Channel Terkoneksi GIS`;
+                    oauthStatus.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
+                } else {
+                    oauthStatus.textContent = 'Belum Terkoneksi OAuth';
+                    oauthStatus.className = 'text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20';
+                }
+            }
+        }
+
+        function startGoogleOAuthLogin(promptType = 'consent') {
+            const clientId = elements.inputOAuthClientId?.value.trim() || localStorage.getItem('yt_automator_oauth_client_id');
+            if (!clientId) {
+                showToast('Masukkan Google Client ID di Pengaturan API terlebih dahulu!', 'error');
                 toggleSettingsPanel();
                 return;
             }
 
-            switchStep(2);
-            showToast('AI sedang mengekstrak & menganalisis frame video...', 'info');
+            if (state.supabase.role === 'standard' && state.connectedChannels.length >= 1 && promptType === 'consent') {
+                showToast('Akun Standard dibatasi 1 channel terhubung. Upgrade ke VIP untuk multi-channel!', 'error');
+            }
 
-            const prompt = `Analisis gambar snapshot frame video ini. 
-Hasilkan metadata YouTube lengkap format JSON murni:
-{
-  "title": "Judul mengundang klik SEO (WAJIB masukkan #shorts di awal/akhir dan 1 hashtag tren relevan. Max 100 char)",
-  "description": "Deskripsi lengkap menarik SEO friendly dengan poin-poin stempel waktu & hashtag",
-  "tags": "tag1, tag2, tag3, tag4, tag5, tag6",
-  "suggestedFilename": "seo-slug-filename-video.mp4"
-}`;
+            if (window.google?.accounts?.oauth2) {
+                const client = window.google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+                    callback: async (tokenResponse) => {
+                        if (tokenResponse.access_token) {
+                            state.accessToken = tokenResponse.access_token;
+                            await fetchAndAddChannelProfile(tokenResponse.access_token);
+                        }
+                    }
+                });
+                client.requestAccessToken({ prompt: promptType });
+            } else {
+                showToast('Google Identity Services (GIS) SDK belum siap', 'error');
+            }
+        }
 
-            const fallbackModels = [state.selectedGeminiModel, 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-            const uniqueModels = [...new Set(fallbackModels)];
+        async function fetchAndAddChannelProfile(accessToken) {
+            try {
+                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (!res.ok) throw new Error('Gagal mengambil profil channel YouTube');
+                const data = await res.json();
+                if (data.items?.[0]) {
+                    const ch = data.items[0];
+                    const chId = ch.id;
+                    const chTitle = ch.snippet.title;
+                    const customUrl = ch.snippet.customUrl || '';
+                    const uploadsPlaylistId = ch.contentDetails?.relatedPlaylists?.uploads || '';
 
-            let success = false;
-            for (const modelName of uniqueModels) {
-                try {
-                    const cleanBase64 = state.snapshotBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '');
-                    const reqBody = {
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
-                            ]
-                        }],
-                        generationConfig: { responseMimeType: 'application/json' }
+                    const existingIdx = state.connectedChannels.findIndex(c => c.id === chId);
+                    const channelObj = {
+                        id: chId,
+                        title: chTitle,
+                        customUrl: customUrl,
+                        uploadsPlaylistId: uploadsPlaylistId,
+                        accessToken: accessToken,
+                        updatedAt: new Date().toISOString()
                     };
 
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.geminiApiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(reqBody)
-                    });
-
-                    if (!response.ok) {
-                        const errText = await response.text();
-                        console.warn(`Model ${modelName} failed:`, errText);
-                        continue;
+                    if (state.supabase.role === 'standard') {
+                        state.connectedChannels = [channelObj];
+                    } else {
+                        if (existingIdx >= 0) {
+                            state.connectedChannels[existingIdx] = channelObj;
+                        } else {
+                            state.connectedChannels.push(channelObj);
+                        }
                     }
 
-                    const resData = await response.json();
-                    const textContent = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (!textContent) continue;
+                    saveConnectedChannels();
+                    showToast(`Channel "${chTitle}" berhasil terhubung!`, 'success');
+                    fetchAllConnectedChannelsVideos();
+                }
+            } catch (err) {
+                console.error('Fetch Channel Profile Error:', err);
+                showToast('Gagal memuat detail channel: ' + err.message, 'error');
+            }
+        }
 
-                    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-                    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : textContent);
+        function verifyAndRefreshActiveOAuthToken() {
+            startGoogleOAuthLogin('none');
+        }
 
-                    state.aiResults = parsed;
-                    elements.inputAiTitle.value = parsed.title || '';
-                    elements.inputAiDescription.value = parsed.description || '';
-                    elements.inputAiTags.value = parsed.tags || '';
-                    elements.inputRenamedFilename.value = parsed.suggestedFilename || 'video-ter-rename.mp4';
-                    
-                    updateCharCount();
-                    success = true;
-                    showToast(`Inspeksi berhasil via model ${modelName}!`, 'success');
-                    break;
+        function handleChannelSelectChange() {
+            const sel = document.getElementById('select-channel-account');
+            if (sel && sel.value) {
+                const ch = state.connectedChannels.find(c => c.id === sel.value);
+                if (ch && ch.accessToken) {
+                    state.accessToken = ch.accessToken;
+                    state.activeChannelId = ch.id;
+                }
+            }
+        }
 
-                } catch (err) {
-                    console.warn(`Error trying ${modelName}:`, err);
+        // Live YouTube Channel Video Collection (Tab 4)
+        async function fetchAllConnectedChannelsVideos() {
+            if (state.connectedChannels.length === 0) {
+                renderVideoHistory();
+                return;
+            }
+
+            const spinner = document.getElementById('history-loading-spinner');
+            if (spinner) spinner.classList.remove('hidden');
+
+            try {
+                let allVideos = [];
+                for (const ch of state.connectedChannels) {
+                    if (!ch.accessToken) continue;
+                    const channelVids = await fetchChannelVideos(ch);
+                    allVideos = allVideos.concat(channelVids);
+                }
+
+                state.videoHistory = allVideos;
+                try {
+                    localStorage.setItem('yt_automator_video_history', JSON.stringify(allVideos));
+                } catch(e){}
+
+                renderVideoHistory();
+                showToast('Berhasil menyelaraskan seluruh koleksi video channel!', 'success');
+            } catch (err) {
+                console.error("Fetch All Videos Error:", err);
+                showToast('Gagal sync video channel: ' + err.message, 'error');
+            } finally {
+                if (spinner) spinner.classList.add('hidden');
+            }
+        }
+
+        async function fetchChannelVideos(channel) {
+            const token = channel.accessToken;
+            let playlistId = channel.uploadsPlaylistId;
+
+            if (!playlistId) {
+                const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channel.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const chData = await chRes.json();
+                playlistId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+            }
+            if (!playlistId) return [];
+
+            // 1. Fetch Playlist Item IDs (Paginated)
+            let videoIds = [];
+            let nextPageToken = '';
+            let pageCount = 0;
+
+            do {
+                const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50&pageToken=${nextPageToken}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!plRes.ok) break;
+                const plData = await plRes.json();
+                
+                (plData.items || []).forEach(item => {
+                    const vId = item.contentDetails?.videoId || item.snippet?.resourceId?.videoId;
+                    if (vId) videoIds.push(vId);
+                });
+
+                nextPageToken = plData.nextPageToken || '';
+                pageCount++;
+            } while (nextPageToken && pageCount < 10); // Limit to 500 max per channel for speed
+
+            if (videoIds.length === 0) return [];
+
+            // 2. Batch Fetch Video Details (50 IDs per request)
+            let detailedVideos = [];
+            for (let i = 0; i < videoIds.length; i += 50) {
+                const batch = videoIds.slice(i, i + 50).join(',');
+                const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status,statistics&id=${batch}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!vRes.ok) continue;
+                const vData = await vRes.json();
+
+                (vData.items || []).forEach(v => {
+                    const snippet = v.snippet || {};
+                    const status = v.status || {};
+                    const stats = v.statistics || {};
+                    const contentDetails = v.contentDetails || {};
+
+                    const title = snippet.title || '';
+                    const isShorts = title.toLowerCase().includes('#shorts') || (contentDetails.duration && parseIsoDuration(contentDetails.duration) <= 60);
+
+                    detailedVideos.push({
+                        id: v.id,
+                        channelId: channel.id,
+                        channelTitle: channel.title,
+                        title: title,
+                        thumbnail: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || '',
+                        publishedAt: snippet.publishedAt,
+                        status: status,
+                        views: parseInt(stats.viewCount || '0'),
+                        likes: parseInt(stats.likeCount || '0'),
+                        comments: parseInt(stats.commentCount || '0'),
+                        isShorts: isShorts
+                    });
+                });
+            }
+
+            return detailedVideos;
+        }
+
+        function parseIsoDuration(duration) {
+            const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            if (!match) return 0;
+            const hours = parseInt(match[1] || '0');
+            const minutes = parseInt(match[2] || '0');
+            const seconds = parseInt(match[3] || '0');
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        function getEffectiveVisibility(v) {
+            if (v.status?.publishAt && new Date(v.status.publishAt) > new Date()) {
+                return 'scheduled';
+            }
+            return v.status?.privacyStatus || 'public';
+        }
+
+        function handleHistoryChannelFilterChange() {
+            renderVideoHistory();
+        }
+
+        function renderVideoHistory() {
+            const container = document.getElementById('history-vertical-container');
+            const emptyState = document.getElementById('history-empty-state');
+            const channelFilter = document.getElementById('select-history-channel-filter')?.value || 'all';
+
+            if (!container) return;
+
+            let history = [];
+            try {
+                const saved = localStorage.getItem('yt_automator_video_history');
+                history = saved ? JSON.parse(saved) : state.videoHistory;
+            } catch(e) { history = state.videoHistory; }
+
+            // Apply Filters
+            let filtered = history;
+
+            if (channelFilter !== 'all') {
+                filtered = filtered.filter(v => v.channelId === channelFilter);
+            }
+
+            if (state.ytFilters.visibility && state.ytFilters.visibility.length > 0) {
+                filtered = filtered.filter(v => state.ytFilters.visibility.includes(getEffectiveVisibility(v)));
+            }
+
+            if (state.ytFilters.viewsVal !== null && !isNaN(state.ytFilters.viewsVal)) {
+                if (state.ytFilters.viewsOp === 'gt') {
+                    filtered = filtered.filter(v => v.views >= state.ytFilters.viewsVal);
+                } else {
+                    filtered = filtered.filter(v => v.views <= state.ytFilters.viewsVal);
                 }
             }
 
-            if (!success) {
-                showToast('Gagal AI Inspeksi: Semua model Gemini sibuk/limit. Coba lagi dalam 10 detik.', 'error');
+            // Apply Sort
+            if (state.ytFilters.sortBy === 'views') {
+                filtered.sort((a, b) => b.views - a.views);
+            } else {
+                filtered.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+            }
+
+            // Update Counter Badges
+            document.getElementById('stat-total-count').textContent = filtered.length;
+            document.getElementById('stat-shorts-count').textContent = filtered.filter(v => v.isShorts).length;
+            document.getElementById('stat-videos-count').textContent = filtered.filter(v => !v.isShorts).length;
+            document.getElementById('stat-scheduled-count').textContent = filtered.filter(v => getEffectiveVisibility(v) === 'scheduled').length;
+
+            if (filtered.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+            container.innerHTML = '';
+
+            filtered.forEach(v => {
+                const vis = getEffectiveVisibility(v);
+                let visBadge = '';
+                if (vis === 'scheduled') {
+                    const pubDate = v.status?.publishAt ? new Date(v.status.publishAt).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+                    visBadge = `<span class="text-amber-400 font-semibold text-[11px] flex items-center gap-1"><i class="fa-solid fa-clock text-amber-400"></i> Dijadwalkan ${pubDate}</span>`;
+                } else if (vis === 'public') {
+                    const timeAgo = formatTimeAgo(v.publishedAt);
+                    visBadge = `<span class="text-slate-400 font-medium text-[11px] flex items-center gap-1"><i class="fa-solid fa-globe text-emerald-400"></i> ${timeAgo}</span>`;
+                } else if (vis === 'private') {
+                    visBadge = `<span class="text-slate-400 font-medium text-[11px] flex items-center gap-1"><i class="fa-solid fa-lock text-rose-400"></i> Pribadi</span>`;
+                } else {
+                    visBadge = `<span class="text-slate-400 font-medium text-[11px] flex items-center gap-1"><i class="fa-solid fa-link text-blue-400"></i> Tidak Publik</span>`;
+                }
+
+                const typeBadge = v.isShorts 
+                    ? `<span class="bg-red-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wider absolute top-2 left-2"><i class="fa-solid fa-bolt"></i> Shorts</span>`
+                    : `<span class="bg-slate-900/80 text-slate-200 text-[9px] font-bold px-1.5 py-0.5 rounded shadow absolute top-2 left-2">Video</span>`;
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 border border-slate-800/80 rounded-xl overflow-hidden hover:border-slate-700 transition flex flex-col justify-between shadow-md";
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="relative aspect-video bg-black overflow-hidden group">
+                            <img src="${v.thumbnail || 'https://placehold.co/600x400/0f172a/94a3b8?text=No+Thumbnail'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="Thumbnail">
+                            ${typeBadge}
+                        </div>
+                        <div class="p-2.5 space-y-1.5">
+                            <h4 class="font-bold text-xs text-slate-100 line-clamp-2 leading-snug">${v.title}</h4>
+                            <div class="flex items-center justify-between pt-1">
+                                ${visBadge}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-2.5 py-2 border-t border-slate-900 bg-slate-900/50 flex items-center justify-between text-[11px] text-slate-400">
+                        <div class="flex items-center gap-2">
+                            <span title="Penayangan"><i class="fa-solid fa-chart-simple text-slate-400"></i> ${v.views.toLocaleString('id-ID')}</span>
+                            <span title="Suka"><i class="fa-regular fa-thumbs-up text-slate-400"></i> ${v.likes.toLocaleString('id-ID')}</span>
+                            <span title="Komentar"><i class="fa-regular fa-comment text-slate-400"></i> ${v.comments.toLocaleString('id-ID')}</span>
+                        </div>
+                        <a href="https://youtube.com/watch?v=${v.id}" target="_blank" class="text-brand-400 hover:text-brand-300"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function formatTimeAgo(dateStr) {
+            if (!dateStr) return '';
+            const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+            if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+            if (diff < 2592000) return `${Math.floor(diff / 86400)} hari lalu`;
+            return new Date(dateStr).toLocaleDateString('id-ID');
+        }
+
+        function applyYtFilterModal() {
+            const sortRadio = document.querySelector('input[name="yt-filter-sort"]:checked');
+            const visCheckboxes = document.querySelectorAll('input[name="yt-filter-vis"]:checked');
+            const viewsOp = document.getElementById('yt-filter-views-op')?.value || 'gt';
+            const viewsInput = document.getElementById('yt-filter-views-val')?.value;
+
+            state.ytFilters.sortBy = sortRadio ? sortRadio.value : 'terbaru';
+            state.ytFilters.visibility = Array.from(visCheckboxes).map(c => c.value);
+            state.ytFilters.viewsOp = viewsOp;
+            state.ytFilters.viewsVal = viewsInput ? parseInt(viewsInput) : null;
+
+            closeYtFilterModal();
+            renderVideoHistory();
+            showToast('Filter berhasil diterapkan!', 'success');
+        }
+
+        function resetAllFilters() {
+            state.ytFilters = { sortBy: 'terbaru', visibility: [], viewsOp: 'gt', viewsVal: null };
+            const sortDefault = document.querySelector('input[name="yt-filter-sort"][value="terbaru"]');
+            if (sortDefault) sortDefault.checked = true;
+            document.querySelectorAll('input[name="yt-filter-vis"]').forEach(c => c.checked = false);
+            const viewsInput = document.getElementById('yt-filter-views-val');
+            if (viewsInput) viewsInput.value = '';
+
+            closeYtFilterModal();
+            renderVideoHistory();
+            showToast('Filter telah di-reset', 'info');
+        }
+
+        // Admin & SaaS User Auth Logic
+        function loadAdminUserList() {
+            const tbody = document.getElementById('admin-user-table-body');
+            const totalSpan = document.getElementById('admin-total-users');
+            if (!tbody) return;
+
+            let users = [];
+            try {
+                const saved = localStorage.getItem('yt_automator_managed_users');
+                users = saved ? JSON.parse(saved) : mockUsersList;
+            } catch(e) { users = mockUsersList; }
+
+            if (totalSpan) totalSpan.textContent = users.length;
+            tbody.innerHTML = '';
+
+            if (users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">Belum ada user terdaftar.</td></tr>`;
+                return;
+            }
+
+            users.forEach((u, idx) => {
+                const isExpired = new Date(u.expired_at) < new Date();
+                const statusBadge = isExpired 
+                    ? `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded text-[10px] font-bold">Kadaluarsa</span>`
+                    : `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold">Aktif</span>`;
+
+                const roleBadge = u.role === 'admin' 
+                    ? `<span class="text-purple-400 font-bold">👑 Admin</span>`
+                    : u.role === 'vip' 
+                    ? `<span class="text-amber-400 font-bold">⭐ VIP</span>`
+                    : `<span class="text-blue-400 font-bold">🔹 Standard</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/50 transition";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-white">${u.username}</td>
+                    <td class="p-3 font-mono text-amber-300 bg-slate-900/30 px-2 rounded">${u.password}</td>
+                    <td class="p-3">${roleBadge}</td>
+                    <td class="p-3 font-mono text-slate-400">${u.expired_at.replace('T', ' ')}</td>
+                    <td class="p-3">${statusBadge}</td>
+                    <td class="p-3 text-right space-x-1">
+                        <button onclick="extendUserExpired(${idx}, 30)" title="Perpanjang +30 Hari" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded text-[10px] font-medium">+30 Hari</button>
+                        <button onclick="editAdminUser(${idx})" title="Edit User" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded text-[10px] font-medium"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteAdminUser(${idx})" title="Hapus User" class="px-2 py-1 bg-slate-800 hover:bg-rose-600/20 text-slate-400 hover:text-rose-400 rounded text-[10px] font-medium"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function saveAdminUser() {
+            const usernameInput = document.getElementById('admin-input-username');
+            const passwordInput = document.getElementById('admin-input-password');
+            const roleInput = document.getElementById('admin-input-role');
+            const expiredInput = document.getElementById('admin-input-expired');
+            const editIndexInput = document.getElementById('admin-edit-index');
+
+            const username = usernameInput?.value.trim();
+            const password = passwordInput?.value.trim();
+            const role = roleInput?.value;
+            const expired_at = expiredInput?.value;
+            const editIdx = parseInt(editIndexInput?.value ?? -1);
+
+            if (!username || !password || !expired_at) {
+                showToast('Semua kolom form user wajib diisi!', 'error');
+                return;
+            }
+
+            let users = [];
+            try {
+                const saved = localStorage.getItem('yt_automator_managed_users');
+                users = saved ? JSON.parse(saved) : [...mockUsersList];
+            } catch(e) { users = [...mockUsersList]; }
+
+            if (editIdx >= 0) {
+                users[editIdx] = { ...users[editIdx], username, password, role, expired_at };
+                showToast('Berhasil memperbarui data user!', 'success');
+            } else {
+                users.push({ id: 'u_' + Date.now(), username, password, role, expired_at });
+                showToast('Berhasil menambahkan member baru!', 'success');
+            }
+
+            localStorage.setItem('yt_automator_managed_users', JSON.stringify(users));
+            resetAdminForm();
+            loadAdminUserList();
+        }
+
+        function editAdminUser(index) {
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList; } catch(e) { users = mockUsersList; }
+            const u = users[index];
+            if (!u) return;
+
+            document.getElementById('admin-input-username').value = u.username;
+            document.getElementById('admin-input-password').value = u.password;
+            document.getElementById('admin-input-role').value = u.role;
+            document.getElementById('admin-input-expired').value = u.expired_at;
+            document.getElementById('admin-edit-index').value = index;
+            document.getElementById('admin-form-title').textContent = `Edit User: ${u.username}`;
+            document.getElementById('admin-btn-save-text').textContent = 'Perbarui User';
+            document.getElementById('admin-btn-cancel-edit').classList.remove('hidden');
+        }
+
+        function resetAdminForm() {
+            document.getElementById('admin-input-username').value = '';
+            document.getElementById('admin-input-password').value = '';
+            document.getElementById('admin-input-role').value = 'vip';
+            document.getElementById('admin-input-expired').value = '';
+            document.getElementById('admin-edit-index').value = '-1';
+            document.getElementById('admin-form-title').textContent = 'Tambah Member Baru';
+            document.getElementById('admin-btn-save-text').textContent = 'Simpan & Buat User';
+            document.getElementById('admin-btn-cancel-edit').classList.add('hidden');
+        }
+
+        function deleteAdminUser(index) {
+            if (!confirm('Yakin ingin menghapus user ini?')) return;
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList; } catch(e) { users = mockUsersList; }
+            users.splice(index, 1);
+            localStorage.setItem('yt_automator_managed_users', JSON.stringify(users));
+            loadAdminUserList();
+            showToast('User berhasil dihapus!', 'success');
+        }
+
+        function extendUserExpired(index, days) {
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList; } catch(e) { users = mockUsersList; }
+            const u = users[index];
+            if (!u) return;
+
+            let expTime = new Date(u.expired_at).getTime();
+            let baseDate = new Date(isNaN(expTime) || expTime < Date.now() ? Date.now() : expTime);
+            baseDate.setDate(baseDate.getDate() + days);
+            u.expired_at = baseDate.toISOString().slice(0, 16);
+
+            localStorage.setItem('yt_automator_managed_users', JSON.stringify(users));
+            loadAdminUserList();
+            showToast(`Masa aktif ${u.username} ditambah ${days} hari!`, 'success');
+        }
+
+        function applyUserPermissions(role, expiredAt, username) {
+            state.supabase = { role, expiredAt, username };
+            try {
+                localStorage.setItem('yt_automator_user_role', role);
+                localStorage.setItem('yt_automator_user_expired', expiredAt);
+                localStorage.setItem('yt_automator_user_name', username);
+            } catch (e) {}
+
+            const badgeContainer = document.getElementById('user-auth-badge');
+            const loginBtn = document.getElementById('btn-open-login-modal');
+            const loginBtnMobile = document.getElementById('btn-open-login-modal-mobile');
+            const adminBtn = document.getElementById('btn-open-admin-dashboard');
+            const settingsBtn = document.getElementById('btn-toggle-settings');
+            const mobileSettingsBtn = document.getElementById('mobile-btn-toggle-settings');
+            const mobileAdminBtn = document.getElementById('mobile-btn-admin-dashboard');
+            const mobileLogoutBtn = document.getElementById('mobile-btn-logout');
+            const mobileRoleBadge = document.getElementById('mobile-role-badge');
+            const roleLabel = document.getElementById('lbl-role-name');
+
+            const landingSection = document.getElementById('landing-page-section');
+            const workspaceSection = document.getElementById('main-app-workspace');
+            const supabaseConfigCard = document.getElementById('supabase-config-card');
+
+            // Toggle Landing Page vs Main Workspace
+            if (role !== 'guest') {
+                if (landingSection) landingSection.classList.add('hidden');
+                if (workspaceSection) workspaceSection.classList.remove('hidden');
+                if (badgeContainer) badgeContainer.classList.remove('hidden');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (loginBtnMobile) loginBtnMobile.classList.add('hidden');
+                if (settingsBtn) settingsBtn.classList.remove('hidden');
+                if (mobileSettingsBtn) mobileSettingsBtn.classList.remove('hidden');
+                if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('hidden');
+            } else {
+                if (landingSection) landingSection.classList.remove('hidden');
+                if (workspaceSection) workspaceSection.classList.add('hidden');
+                if (badgeContainer) badgeContainer.classList.add('hidden');
+                if (loginBtn) loginBtn.classList.remove('hidden');
+                if (loginBtnMobile) loginBtnMobile.classList.remove('hidden');
+                if (settingsBtn) settingsBtn.classList.add('hidden');
+                if (mobileSettingsBtn) mobileSettingsBtn.classList.add('hidden');
+                if (mobileLogoutBtn) mobileLogoutBtn.classList.add('hidden');
+            }
+
+            if (roleLabel) {
+                roleLabel.textContent = role === 'admin' ? '👑 ADMIN' : role === 'vip' ? '⭐ VIP MEMBER' : '🔹 STANDARD';
+            }
+            if (mobileRoleBadge) {
+                mobileRoleBadge.textContent = role === 'admin' ? '👑 ADMIN' : role === 'vip' ? '⭐ VIP MEMBER' : role === 'standard' ? '🔹 STANDARD' : 'Mode Tamu (Guest)';
+            }
+
+            if (adminBtn) {
+                if (role === 'admin') {
+                    adminBtn.classList.remove('hidden');
+                    if (mobileAdminBtn) mobileAdminBtn.classList.remove('hidden');
+                    if (supabaseConfigCard) supabaseConfigCard.classList.remove('hidden');
+                } else {
+                    adminBtn.classList.add('hidden');
+                    if (mobileAdminBtn) mobileAdminBtn.classList.add('hidden');
+                    if (supabaseConfigCard) supabaseConfigCard.classList.add('hidden');
+                }
+            }
+
+            const modelSelect = elements.selectGeminiModel || document.getElementById('select-gemini-model');
+            if (modelSelect) {
+                if (role === 'standard') {
+                    modelSelect.value = 'gemini-2.5-flash';
+                    modelSelect.disabled = true;
+                } else {
+                    modelSelect.disabled = false;
+                }
+            }
+        }
+
+        function handleUserLogout() {
+            localStorage.removeItem('yt_automator_user_role');
+            localStorage.removeItem('yt_automator_user_expired');
+            localStorage.removeItem('yt_automator_user_name');
+            applyUserPermissions('guest', null, '');
+            showToast('Berhasil Logout', 'info');
+        }
+
+        async function handleSupabaseLogin() {
+            const email = document.getElementById('auth-input-email')?.value.trim() || '';
+            const password = document.getElementById('auth-input-password')?.value || '';
+            if (!email || !password) { showToast('Masukkan username dan password!', 'error'); return; }
+
+            const txtBtn = document.getElementById('txt-login-btn');
+            const spinBtn = document.getElementById('spin-login-btn');
+            if (txtBtn) txtBtn.textContent = 'Memverifikasi Perangkat...';
+            if (spinBtn) spinBtn.classList.remove('hidden');
+
+            const currentDeviceId = getOrCreateDeviceId();
+
+            try {
+                // 1. Akun Administrator Utama Pemilik Web
+                if (email === 'admin' && (password === 'admin' || password === '123')) {
+                    applyUserPermissions('admin', new Date(Date.now() + 3650*86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login Administrator Berhasil!', 'success');
+                    return;
+                } else if (email === 'vip' && password === 'vip') {
+                    applyUserPermissions('vip', new Date(Date.now() + 30*86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login VIP Member Berhasil!', 'success');
+                    return;
+                } else if (email === 'standard' && password === 'standard') {
+                    applyUserPermissions('standard', new Date(Date.now() + 30*86400000).toISOString(), email);
+                    closeLoginModal();
+                    showToast('Login Standard Member Berhasil!', 'success');
+                    return;
+                }
+
+                // 2. Cek ke Supabase Database dengan Single-Device Lock
+                const url = state.supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
+                const key = state.supabaseKey || localStorage.getItem('yt_automator_supabase_key');
+
+                if (url && key && window.supabase) {
+                    const client = window.supabase.createClient(url, key);
+                    const { data: profiles } = await client
+                        .from('profiles')
+                        .select('*')
+                        .or(`username.eq.${email},id.eq.${email}`);
+
+                    if (profiles && profiles.length > 0) {
+                        const matchedUser = profiles.find(p => p.password === password || p.username === email);
+                        if (matchedUser) {
+                            // Check Single-Device Lock
+                            if (matchedUser.role !== 'admin') {
+                                if (matchedUser.device_id && matchedUser.device_id !== currentDeviceId) {
+                                    showToast('🚫 GAGAL LOGIN: Akun ini terikat pada perangkat lain! Hubungi Admin untuk reset lisensi.', 'error');
+                                    return;
+                                } else if (!matchedUser.device_id) {
+                                    // Claim device ID for user
+                                    await client.from('profiles').update({ device_id: currentDeviceId }).eq('id', matchedUser.id);
+                                }
+                            }
+
+                            const userRole = matchedUser.role || 'standard';
+                            const expDate = matchedUser.expired_at || new Date(Date.now() + 30*86400000).toISOString();
+                            applyUserPermissions(userRole, expDate, matchedUser.username || email);
+                            closeLoginModal();
+                            showToast(`Selamat datang ${matchedUser.username || email}!`, 'success');
+                            return;
+                        }
+                    }
+                }
+
+                // Cek dari local managed users
+                let managedUsers = [];
+                try {
+                    managedUsers = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList;
+                } catch(e) { managedUsers = mockUsersList; }
+
+                const localUserIdx = managedUsers.findIndex(u => u.username === email && u.password === password);
+                if (localUserIdx >= 0) {
+                    const userObj = managedUsers[localUserIdx];
+                    if (userObj.role !== 'admin') {
+                        if (userObj.device_id && userObj.device_id !== currentDeviceId) {
+                            showToast('🚫 GAGAL LOGIN: Akun ini terikat pada perangkat lain! Hubungi Admin.', 'error');
+                            return;
+                        } else if (!userObj.device_id) {
+                            managedUsers[localUserIdx].device_id = currentDeviceId;
+                            localStorage.setItem('yt_automator_managed_users', JSON.stringify(managedUsers));
+                        }
+                    }
+                    applyUserPermissions(userObj.role, userObj.expired_at, userObj.username);
+                    closeLoginModal();
+                    showToast(`Login Berhasil sebagai ${userObj.username}!`, 'success');
+                    return;
+                }
+
+                showToast('Username atau password tidak valid!', 'error');
+            } catch (err) {
+                console.error("Login Error:", err);
+                showToast('Gagal login: ' + err.message, 'error');
+            } finally {
+                if (txtBtn) txtBtn.textContent = 'Masuk Member Pro';
+                if (spinBtn) spinBtn.classList.add('hidden');
+            }
+        }
+
+        // Tab 1 Video Processing & Frame Extraction
+        function handleVideoFileSelect(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            state.selectedFile = file;
+
+            const videoPreview = document.getElementById('video-preview');
+            const previewCard = document.getElementById('video-preview-card');
+            
+            const metaName = document.getElementById('meta-file-name');
+            const metaSize = document.getElementById('meta-file-size');
+            if (metaName) metaName.textContent = file.name;
+            if (metaSize) metaSize.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            const videoUrl = URL.createObjectURL(file);
+            if (videoPreview) {
+                videoPreview.src = videoUrl;
+                videoPreview.onloadedmetadata = () => {
+                    const dur = document.getElementById('meta-duration');
+                    const res = document.getElementById('meta-resolution');
+                    if (dur) dur.textContent = Math.round(videoPreview.duration) + ' detik';
+                    if (res) res.textContent = `${videoPreview.videoWidth} x ${videoPreview.videoHeight}`;
+                    extractVideoFrames(videoPreview);
+                };
+                videoPreview.load();
+            }
+            if (previewCard) previewCard.classList.remove('hidden');
+            event.target.value = '';
+        }
+
+        function extractVideoFrames(videoEl) {
+            const duration = videoEl.duration || 10;
+            const timestamps = [
+                Math.min(0.5, duration * 0.1),
+                Math.min(1.5, duration * 0.3),
+                Math.min(3.0, duration * 0.5),
+                Math.min(5.0, duration * 0.7),
+                Math.min(8.0, duration * 0.9)
+            ];
+            state.thumbnails = [];
+            const gallery = document.getElementById('thumbnail-gallery');
+            if (gallery) gallery.innerHTML = '<div class="col-span-5 text-center text-[10px] text-slate-500 py-2"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Memuat frame...</div>';
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const captureSingleFrame = (time) => {
+                return new Promise((resolve) => {
+                    const tempVid = document.createElement('video');
+                    tempVid.muted = true;
+                    tempVid.playsInline = true;
+                    tempVid.preload = 'auto';
+                    tempVid.src = videoEl.src;
+                    
+                    const handleSeek = () => {
+                        canvas.width = tempVid.videoWidth || 640;
+                        canvas.height = tempVid.videoHeight || 360;
+                        try {
+                            ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                            resolve(dataUrl);
+                        } catch(e) {
+                            resolve(null);
+                        }
+                    };
+
+                    tempVid.onloadedmetadata = () => {
+                        tempVid.currentTime = Math.min(time, Math.max(0, tempVid.duration - 0.1));
+                    };
+                    tempVid.onseeked = handleSeek;
+                    tempVid.onerror = () => resolve(null);
+                    
+                    setTimeout(() => resolve(null), 3000);
+                });
+            };
+
+            Promise.all(timestamps.map(t => captureSingleFrame(t))).then(results => {
+                const validThumbs = results.filter(Boolean);
+                state.thumbnails = validThumbs;
+                if (gallery) {
+                    gallery.innerHTML = '';
+                    if (validThumbs.length === 0 && videoEl) {
+                        canvas.width = videoEl.videoWidth || 640;
+                        canvas.height = videoEl.videoHeight || 360;
+                        try {
+                            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                            const fallbackUrl = canvas.toDataURL('image/jpeg', 0.85);
+                            state.thumbnails = [fallbackUrl];
+                            validThumbs.push(fallbackUrl);
+                        } catch(e){}
+                    }
+                    validThumbs.forEach((dataUrl, index) => {
+                        const imgThumb = document.createElement('img');
+                        imgThumb.src = dataUrl;
+                        imgThumb.className = `w-full h-12 object-cover rounded cursor-pointer border-2 ${index === 0 ? 'border-brand-500' : 'border-transparent'} hover:opacity-80 transition`;
+                        imgThumb.onclick = () => selectThumbnail(index);
+                        gallery.appendChild(imgThumb);
+                    });
+                }
+                if (validThumbs.length > 0) {
+                    selectThumbnail(0);
+                }
+            });
+        }
+
+        function selectThumbnail(index) {
+            state.selectedThumbnailIndex = index;
+            const displayImg = document.getElementById('selected-thumbnail-img');
+            if (displayImg && state.thumbnails[index]) {
+                displayImg.src = state.thumbnails[index];
+            }
+            const gallery = document.getElementById('thumbnail-gallery');
+            if (gallery) {
+                Array.from(gallery.children).forEach((child, i) => {
+                    child.className = `w-full h-12 object-cover rounded cursor-pointer border-2 ${i === index ? 'border-brand-500' : 'border-transparent'} hover:opacity-80 transition`;
+                });
+            }
+        }
+
+        // Tab 2 AI Inspection
+        async function startAiInspection() {
+            const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
+            if (!apiKey) {
+                showToast('Masukkan Gemini API Key terlebih dahulu!', 'error');
+                toggleSettingsPanel();
+                return;
+            }
+
+            const loadingModal = document.getElementById('modal-ai-loading');
+            if (loadingModal) loadingModal.classList.remove('hidden');
+
+            try {
+                if (!state.thumbnails || state.thumbnails.length === 0) {
+                    const videoPreview = document.getElementById('video-preview');
+                    if (videoPreview) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoPreview.videoWidth || 640;
+                        canvas.height = videoPreview.videoHeight || 360;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(videoPreview, 0, 0, canvas.width, canvas.height);
+                        state.thumbnails = [canvas.toDataURL('image/jpeg', 0.85)];
+                        selectThumbnail(0);
+                    }
+                }
+
+                const selectedModel = elements.selectGeminiModel?.value || 'gemini-3.6-flash';
+                const framesData = state.thumbnails.map(t => t.split(',')[1]).filter(Boolean);
+
+                const promptText = `Anda adalah pakar SEO & FYP YouTube Pro. Analisis 5-frame video ini dan hasilkan JSON persis dengan format:
+{
+  "title": "Judul Menarik (max 100 char + emoji + #shorts + hashtag FYP)",
+  "description": "Deskripsi terstruktur lengkap dengan timestamp dan hashtag SEO/FYP abadi",
+  "tags": "tag1, tag2, tag3, tag4, tag5",
+  "product_keywords": "Saran kata kunci produk pencarian marketplace (Shopee/Tokopedia)",
+  "category_id": "17"
+}`;
+
+                const contents = [
+                    {
+                        parts: [
+                            { text: promptText },
+                            ...framesData.map(b64 => ({
+                                inlineData: { mimeType: "image/jpeg", data: b64 }
+                            }))
+                        ]
+                    }
+                ];
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents,
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            thinkingConfig: { thinkingBudget: 0 }
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                const resData = await response.json();
+                
+                let aiResult = {};
+                const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                try {
+                    const cleanJson = rawText.match(/\{[\s\S]*\}/)?.[0] || rawText;
+                    aiResult = JSON.parse(cleanJson);
+                } catch (parseErr) {
+                    console.warn("JSON Parse warning, using regex fallback:", parseErr);
+                    const titleMatch = rawText.match(/"title"\s*:\s*"([^"]+)"/);
+                    const descMatch = rawText.match(/"description"\s*:\s*"([^"]+)"/);
+                    const tagsMatch = rawText.match(/"tags"\s*:\s*"([^"]+)"/);
+                    const keywordsMatch = rawText.match(/"product_keywords"\s*:\s*"([^"]+)"/);
+                    const catMatch = rawText.match(/"category_id"\s*:\s*"([^"]+)"/);
+
+                    aiResult = {
+                        title: titleMatch ? titleMatch[1] : (state.selectedFile ? state.selectedFile.name.replace(/\.[^/.]+$/, "") : "Video Shorts FYP"),
+                        description: descMatch ? descMatch[1] : "",
+                        tags: tagsMatch ? tagsMatch[1] : "shorts, fyp, viral",
+                        product_keywords: keywordsMatch ? keywordsMatch[1] : "",
+                        category_id: catMatch ? catMatch[1] : "17"
+                    };
+                }
+
+                document.getElementById('input-ai-title').value = aiResult.title || '';
+                document.getElementById('input-ai-description').value = aiResult.description || '';
+                document.getElementById('input-ai-tags').value = aiResult.tags || '';
+                document.getElementById('input-product-keywords-suggest').value = aiResult.product_keywords || '';
+                if (aiResult.category_id) {
+                    document.getElementById('upload-category-id').value = aiResult.category_id;
+                }
+
+                updateCharCount();
+                syncFilenameWithTitle();
+                switchStep(2);
+                showToast('Inspeksi & Generate Metadata AI Berhasil!', 'success');
+            } catch (err) {
+                console.error("AI Error:", err);
+                showToast('Gagal Inspeksi AI: ' + err.message + '. Silakan coba Regenerate!', 'error');
+            } finally {
+                if (loadingModal) loadingModal.classList.add('hidden');
             }
         }
 
         function updateCharCount() {
-            const len = elements.inputAiTitle.value.length;
-            elements.titleCharCount.textContent = `${len}/100`;
+            const titleInput = document.getElementById('input-ai-title');
+            const countSpan = document.getElementById('title-char-count');
+            if (titleInput && countSpan) {
+                countSpan.textContent = `${titleInput.value.length}/100`;
+            }
+        }
+
+        function syncFilenameWithTitle() {
+            const titleInput = document.getElementById('input-ai-title');
+            const filenameInput = document.getElementById('input-renamed-filename');
+            if (titleInput && filenameInput) {
+                const cleanSlug = titleInput.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '_')
+                    .replace(/_+/g, '_')
+                    .substring(0, 60);
+                filenameInput.value = (cleanSlug || 'video') + '.mp4';
+            }
         }
 
         function downloadRenamedVideo() {
-            if (!state.selectedFile) return;
-            const newName = elements.inputRenamedFilename.value.trim() || 'video-rename.mp4';
-            const blobUrl = URL.createObjectURL(state.selectedFile);
+            if (!state.selectedFile) {
+                showToast('Tidak ada berkas video yang dipilih!', 'error');
+                return;
+            }
+            const filenameInput = document.getElementById('input-renamed-filename');
+            const newName = filenameInput?.value.trim() || 'renamed_video.mp4';
             const a = document.createElement('a');
-            a.href = blobUrl;
+            a.href = URL.createObjectURL(state.selectedFile);
             a.download = newName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            showToast(`Mengunduh berkas sebagai ${newName}`, 'success');
+            showToast(`Mengunduh berkas: ${newName}`, 'success');
         }
 
         function proceedToStep3() {
-            const productTag = elements.inputProductTag.value.trim();
-            if (productTag && !elements.inputAiDescription.value.includes(productTag)) {
-                elements.inputAiDescription.value += `\n\n📌 Tag Produk / Link Afiliasi:\n${productTag}`;
-            }
             switchStep(3);
         }
 
-        // Multi-Channel OAuth Logic
-        function loadConnectedChannels() {
-            try {
-                const saved = localStorage.getItem('yt_automator_channels');
-                state.connectedChannels = saved ? JSON.parse(saved) : [];
-                state.activeChannelId = localStorage.getItem('yt_automator_active_channel_id') || null;
-            } catch (e) {
-                state.connectedChannels = [];
-            }
-            renderChannelDropdown();
-        }
-
-        function saveConnectedChannels() {
-            localStorage.setItem('yt_automator_channels', JSON.stringify(state.connectedChannels));
-            if (state.activeChannelId) {
-                localStorage.setItem('yt_automator_active_channel_id', state.activeChannelId);
-            }
-        }
-
-        function renderChannelDropdown() {
-            if (!elements.selectChannelAccount) return;
-            elements.selectChannelAccount.innerHTML = '';
-
-            if (state.connectedChannels.length === 0) {
-                elements.selectChannelAccount.innerHTML = `<option value="">-- Belum ada channel terhubung. Klik "+ Tambah Akun" --</option>`;
-                if (elements.oauthUserStatusText) {
-                    elements.oauthUserStatusText.textContent = 'Belum Terkoneksi OAuth';
-                    elements.oauthUserStatusText.className = 'text-xs text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20';
-                }
-                return;
-            }
-
-            state.connectedChannels.forEach(ch => {
-                const isSel = ch.id === state.activeChannelId ? 'selected' : '';
-                elements.selectChannelAccount.innerHTML += `<option value="${ch.id}" ${isSel}>${ch.title} (${ch.email || 'YouTube Channel'})</option>`;
-            });
-
-            const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId) || state.connectedChannels[0];
-            if (activeCh) {
-                state.activeChannelId = activeCh.id;
-                state.googleAccessToken = activeCh.token;
-                if (elements.oauthUserStatusText) {
-                    elements.oauthUserStatusText.textContent = `Terhubung: ${activeCh.title}`;
-                    elements.oauthUserStatusText.className = 'text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20';
-                }
-            }
-        }
-
-        function handleChannelSelectChange() {
-            const selId = elements.selectChannelAccount.value;
-            const ch = state.connectedChannels.find(c => c.id === selId);
-            if (ch) {
-                state.activeChannelId = ch.id;
-                state.googleAccessToken = ch.token;
-                saveConnectedChannels();
-                showToast(`Channel aktif diubah ke: ${ch.title}`, 'info');
-                fetchLiveChannelVideos(ch);
-            }
-        }
-
-        function fetchCurrentChannelLiveVideos() {
-            const ch = state.connectedChannels.find(c => c.id === state.activeChannelId);
-            if (ch) {
-                fetchLiveChannelVideos(ch);
-            } else {
-                showToast('Login Google OAuth terlebih dahulu untuk sync live YouTube!', 'error');
-            }
-        }
-
-        function startGoogleOAuthLogin() {
-            if (!state.oauthClientId) {
-                showToast('Masukkan Google Client ID di menu Pengaturan!', 'error');
-                toggleSettingsPanel();
-                return;
-            }
-
-            const redirectUri = getCleanRedirectUri();
-            const scope = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly';
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(state.oauthClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
-
-            window.location.href = authUrl;
-        }
-
-        function checkOAuthHashRedirect() {
-            const hash = window.location.hash;
-            if (hash.includes('access_token=')) {
-                const params = new URLSearchParams(hash.substring(1));
-                const token = params.get('access_token');
-                if (token) {
-                    window.location.hash = '';
-                    fetchChannelProfile(token);
-                }
-            }
-        }
-
-        async function fetchChannelProfile(token) {
-            try {
-                const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Gagal mengambil data profil channel');
-                const data = await res.json();
-                const item = data.items?.[0];
-                if (item) {
-                    const channelObj = {
-                        id: item.id,
-                        title: item.snippet.title,
-                        thumbnail: item.snippet.thumbnails?.default?.url,
-                        uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads,
-                        token: token
-                    };
-
-                    const existingIdx = state.connectedChannels.findIndex(c => c.id === item.id);
-                    if (existingIdx >= 0) {
-                        state.connectedChannels[existingIdx] = channelObj;
-                    } else {
-                        state.connectedChannels.push(channelObj);
-                    }
-
-                    state.activeChannelId = item.id;
-                    state.googleAccessToken = token;
-                    saveConnectedChannels();
-                    renderChannelDropdown();
-                    showToast(`Berhasil login channel: ${channelObj.title}`, 'success');
-                    fetchLiveChannelVideos(channelObj);
-                }
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
-        }
-
         function toggleScheduleDatePicker() {
-            const priv = elements.uploadPrivacy.value;
-            const schedContainer = document.getElementById('schedule-date-container');
-            if (priv === 'scheduled') {
-                schedContainer.classList.remove('hidden');
-                if (!elements.uploadPublishAt.value) {
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    tomorrow.setHours(18, 0, 0, 0);
-                    elements.uploadPublishAt.value = tomorrow.toISOString().slice(0, 16);
+            const vis = document.getElementById('upload-privacy')?.value;
+            const container = document.getElementById('schedule-date-container');
+            if (container) {
+                if (vis === 'scheduled') {
+                    container.classList.remove('hidden');
+                } else {
+                    container.classList.add('hidden');
                 }
-            } else {
-                schedContainer.classList.add('hidden');
             }
         }
 
-        // Resumable YouTube Video Upload
+        // Resumable YouTube Video Upload (Tab 3) & Workflow Auto-Reset
         async function startYouTubeUpload() {
             if (!state.selectedFile) {
-                showToast('Pilih file video!', 'error');
+                showToast('Pilih berkas video terlebih dahulu!', 'error');
                 return;
             }
-            if (!state.googleAccessToken) {
-                showToast('Login Google OAuth terlebih dahulu!', 'error');
+            if (!state.accessToken) {
+                showToast('Koneksikan Channel YouTube Anda terlebih dahulu!', 'error');
                 return;
             }
 
-            elements.uploadProgressContainer.classList.remove('hidden');
-            elements.uploadProgressBar.style.width = '0%';
-            elements.uploadPercentage.textContent = '0%';
-
-            const title = elements.inputAiTitle.value.trim() || 'Untitled Video';
-            const description = elements.inputAiDescription.value.trim() || '';
-            const tags = elements.inputAiTags.value.split(',').map(t => t.trim()).filter(Boolean);
-            const privacy = elements.uploadPrivacy.value;
-            const categoryId = elements.uploadCategoryId.value;
-            const madeForKids = elements.uploadMadeForKids.value === 'true';
+            const title = document.getElementById('input-ai-title')?.value || state.selectedFile.name;
+            const description = document.getElementById('input-ai-description')?.value || '';
+            const tags = (document.getElementById('input-ai-tags')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+            const categoryId = document.getElementById('upload-category-id')?.value || '17';
+            const privacyStatus = document.getElementById('upload-privacy')?.value || 'private';
+            const isKids = document.getElementById('upload-made-for-kids')?.value === 'true';
 
             const metadata = {
                 snippet: { title, description, tags, categoryId },
                 status: {
-                    privacyStatus: privacy === 'scheduled' ? 'private' : privacy,
-                    selfDeclaredMadeForKids: madeForKids
+                    privacyStatus: privacyStatus === 'scheduled' ? 'private' : privacyStatus,
+                    selfDeclaredMadeForKids: isKids
                 }
             };
 
-            if (privacy === 'scheduled' && elements.uploadPublishAt.value) {
-                metadata.status.publishAt = new Date(elements.uploadPublishAt.value).toISOString();
+            if (privacyStatus === 'scheduled') {
+                const publishAt = document.getElementById('upload-publish-at')?.value;
+                if (publishAt) {
+                    metadata.status.publishAt = new Date(publishAt).toISOString();
+                }
             }
 
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progressText = document.getElementById('upload-percentage');
+            if (progressContainer) progressContainer.classList.remove('hidden');
+
             try {
-                // Initial Resumable Session Request
                 const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${state.googleAccessToken}`,
+                        'Authorization': `Bearer ${state.accessToken}`,
                         'Content-Type': 'application/json',
                         'X-Upload-Content-Length': state.selectedFile.size,
                         'X-Upload-Content-Type': state.selectedFile.type
@@ -1233,12 +2056,10 @@ Hasilkan metadata YouTube lengkap format JSON murni:
                     body: JSON.stringify(metadata)
                 });
 
-                if (!initRes.ok) throw new Error(`Init Upload Gagal: ${initRes.statusText}`);
-
+                if (!initRes.ok) throw new Error(`Initiate Upload Error HTTP ${initRes.status}`);
                 const uploadUrl = initRes.headers.get('Location');
-                if (!uploadUrl) throw new Error('Location header tidak ditemukan');
+                if (!uploadUrl) throw new Error('Tidak mendapatkan URL Resumable Upload');
 
-                // Upload File Binary via XHR Progress
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', uploadUrl, true);
                 xhr.setRequestHeader('Content-Type', state.selectedFile.type);
@@ -1246,341 +2067,204 @@ Hasilkan metadata YouTube lengkap format JSON murni:
                 xhr.upload.onprogress = (e) => {
                     if (e.lengthComputable) {
                         const percent = Math.round((e.loaded / e.total) * 100);
-                        elements.uploadProgressBar.style.width = percent + '%';
-                        elements.uploadPercentage.textContent = percent + '%';
+                        if (progressBar) progressBar.style.width = `${percent}%`;
+                        if (progressText) progressText.textContent = `${percent}%`;
                     }
                 };
 
                 xhr.onload = () => {
                     if (xhr.status === 200 || xhr.status === 201) {
-                        const resJson = JSON.parse(xhr.responseText);
-                        showToast('Video berhasil diunggah ke YouTube!', 'success');
-
-                        const activeCh = state.connectedChannels.find(c => c.id === state.activeChannelId);
-                        saveVideoToHistory({
-                            id: resJson.id,
+                        const responseVideo = JSON.parse(xhr.responseText || '{}');
+                        showToast('🎉 Berhasil Mengunggah Video ke YouTube!', 'success');
+                        
+                        // Add item to local history immediately
+                        const uploadedItem = {
+                            id: responseVideo.id || 'uploaded_' + Date.now(),
+                            channelId: state.activeChannelId || (state.connectedChannels[0]?.id),
+                            channelTitle: state.connectedChannels[0]?.title || 'My Channel',
                             title: title,
-                            filename: state.renamedFile ? state.renamedFile.name : state.selectedFile.name,
-                            isShort: title.toLowerCase().includes('#shorts'),
-                            privacy: privacy,
-                            publishAt: metadata.status.publishAt || null,
-                            uploadDate: new Date().toISOString(),
-                            channelId: state.activeChannelId,
-                            channelTitle: activeCh ? activeCh.title : 'YouTube',
-                            thumbnail: state.snapshotBase64
-                        });
+                            thumbnail: state.thumbnails[state.selectedThumbnailIndex] || '',
+                            publishedAt: new Date().toISOString(),
+                            status: metadata.status,
+                            views: 0,
+                            likes: 0,
+                            comments: 0,
+                            isShorts: title.toLowerCase().includes('#shorts')
+                        };
+
+                        state.videoHistory.unshift(uploadedItem);
+                        try { localStorage.setItem('yt_automator_video_history', JSON.stringify(state.videoHistory)); } catch(e){}
 
                         resetUploadWorkflow();
                         switchStep(4);
+                        if (progressContainer) progressContainer.classList.add('hidden');
+                        fetchAllConnectedChannelsVideos();
                     } else {
-                        showToast(`Upload gagal: HTTP ${xhr.status}`, 'error');
+                        showToast('Gagal Unggah: HTTP ' + xhr.status, 'error');
+                        if (progressContainer) progressContainer.classList.add('hidden');
                     }
                 };
 
-                xhr.onerror = () => showToast('Kesalahan jaringan saat upload.', 'error');
+                xhr.onerror = () => {
+                    showToast('Kesalahan jaringan saat mengunggah', 'error');
+                    if (progressContainer) progressContainer.classList.add('hidden');
+                };
+                
                 xhr.send(state.selectedFile);
 
             } catch (err) {
-                showToast(`Gagal: ${err.message}`, 'error');
+                console.error('Upload Error:', err);
+                showToast('Gagal Unggah: ' + err.message, 'error');
+                if (progressContainer) progressContainer.classList.add('hidden');
             }
         }
 
         function resetUploadWorkflow() {
             state.selectedFile = null;
+            state.thumbnails = [];
+            state.snapshotBase64 = null;
             state.renamedFile = null;
-            elements.videoPreviewCard.classList.add('hidden');
-            elements.inputAiTitle.value = '';
-            elements.inputAiDescription.value = '';
-            elements.inputAiTags.value = '';
-            elements.inputProductTag.value = '';
-            elements.uploadProgressContainer.classList.add('hidden');
+
+            document.getElementById('file-video-input').value = '';
+            document.getElementById('video-preview').src = '';
+            document.getElementById('video-preview-card').classList.add('hidden');
+
+            document.getElementById('input-ai-title').value = '';
+            document.getElementById('input-ai-description').value = '';
+            document.getElementById('input-ai-tags').value = '';
+            document.getElementById('input-product-tag').value = '';
+            document.getElementById('input-product-keywords-suggest').value = '';
+            document.getElementById('input-renamed-filename').value = '';
+            document.getElementById('thumbnail-gallery').innerHTML = '';
+            document.getElementById('selected-thumbnail-img').src = '';
+
+            const progressBar = document.getElementById('upload-progress-bar');
+            if (progressBar) progressBar.style.width = '0%';
         }
 
-        // Helper Toast Notification
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-
-            const toast = document.createElement('div');
-            const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800 border border-slate-700';
-            toast.className = `${bg} text-white text-xs font-medium px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between gap-3 animate-slide-up pointer-events-auto`;
-            toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" class="text-white/70 hover:text-white"><i class="fa-solid fa-xmark"></i></button>`;
-
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        // Modal Instructions Trigger
-        function openGuideModal() { document.getElementById('modal-guide').classList.remove('hidden'); }
-        function closeGuideModal() { document.getElementById('modal-guide').classList.add('hidden'); }
-
-        // Filter Modal & YouTube Studio Collection Functions
-        function openYtFilterModal() {
-            const modal = document.getElementById('modal-yt-filter');
-            if (modal) modal.classList.remove('hidden');
-        }
-
-        function closeYtFilterModal() {
-            const modal = document.getElementById('modal-yt-filter');
-            if (modal) modal.classList.add('hidden');
-        }
-
-        function applyYtFilterModal() {
-            const sortRadio = document.querySelector('input[name="filter_sort_by"]:checked');
-            if (sortRadio) state.filterConfig.sortBy = sortRadio.value;
-
-            const visBoxes = document.querySelectorAll('input[name="filter_vis"]:checked');
-            state.filterConfig.visibility = Array.from(visBoxes).map(b => b.value);
-
-            const viewsVal = document.getElementById('filter-views-val');
-            if (viewsVal && viewsVal.value !== '') {
-                state.filterConfig.viewsValue = parseInt(viewsVal.value, 10);
-                const viewsCondRadio = document.querySelector('input[name="filter_views_cond"]:checked');
-                state.filterConfig.viewsCondition = viewsCondRadio ? viewsCondRadio.value : 'greater';
-            } else {
-                state.filterConfig.viewsValue = null;
+        // Settings Helpers & Initializer
+        function copyRedirectUriToClipboard() {
+            const uriDisplay = document.getElementById('txt-redirect-uri-display');
+            if (uriDisplay && uriDisplay.textContent) {
+                const tempInput = document.createElement('input');
+                tempInput.value = uriDisplay.textContent;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast('URL Redirect URI berhasil disalin!', 'success');
             }
-
-            closeYtFilterModal();
-            renderVideoHistory();
         }
 
-        function resetAllFilters() {
-            state.filterConfig = {
-                sortBy: 'newest',
-                visibility: [],
-                viewsCondition: 'greater',
-                viewsValue: null
-            };
-            const viewsVal = document.getElementById('filter-views-val');
-            if (viewsVal) viewsVal.value = '';
-            const visBoxes = document.querySelectorAll('input[name="filter_vis"]');
-            visBoxes.forEach(b => b.checked = false);
-            const sortDefault = document.querySelector('input[name="filter_sort_by"][value="newest"]');
-            if (sortDefault) sortDefault.checked = true;
-
-            renderVideoHistory();
-        }
-
-        function quickFilterSort(sortBy) {
-            state.filterConfig.sortBy = sortBy;
-            renderVideoHistory();
-        }
-
-        function quickFilterVisibility(vis) {
-            if (state.filterConfig.visibility.includes(vis)) {
-                state.filterConfig.visibility = state.filterConfig.visibility.filter(v => v !== vis);
-            } else {
-                state.filterConfig.visibility.push(vis);
+        async function fetchAvailableGeminiModels() {
+            const apiKey = elements.inputGeminiKey?.value.trim() || localStorage.getItem('yt_automator_gemini_key');
+            if (!apiKey) {
+                showToast('Masukkan Gemini API Key di Pengaturan terlebih dahulu!', 'error');
+                return;
             }
-            renderVideoHistory();
-        }
-
-        function saveVideoToHistory(videoObj) {
             try {
-                let history = JSON.parse(localStorage.getItem('yt_automator_history') || '[]');
-                history.unshift(videoObj);
-                localStorage.setItem('yt_automator_history', JSON.stringify(history));
-                state.videoHistory = history;
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        async function fetchLiveChannelVideos(channelObj) {
-            if (!channelObj || !channelObj.token) return;
-            showToast('Mengambil data video YouTube...', 'info');
-            try {
-                let allItems = [];
-                let pageToken = '';
-                const playlistId = channelObj.uploadsPlaylistId;
-                if (!playlistId) return;
-
-                do {
-                    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,status,contentDetails&playlistId=${playlistId}&maxResults=50${pageToken ? '&pageToken=' + pageToken : ''}`;
-                    const res = await fetch(url, {
-                        headers: { 'Authorization': `Bearer ${channelObj.token}` }
-                    });
-                    if (!res.ok) break;
-                    const data = await res.json();
-                    if (data.items) {
-                        allItems = allItems.concat(data.items);
-                    }
-                    pageToken = data.nextPageToken || '';
-                } while (pageToken && allItems.length < 200);
-
-                if (allItems.length > 0) {
-                    const videoIds = allItems.map(i => i.contentDetails.videoId).join(',');
-                    const statsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,status,snippet&id=${videoIds}`, {
-                        headers: { 'Authorization': `Bearer ${channelObj.token}` }
-                    });
-                    if (statsRes.ok) {
-                        const statsData = await statsRes.json();
-                        const statsMap = {};
-                        (statsData.items || []).forEach(v => { statsMap[v.id] = v; });
-
-                        state.liveChannelVideos = allItems.map(item => {
-                            const vidId = item.contentDetails.videoId;
-                            const fullData = statsMap[vidId] || {};
-                            const status = fullData.status || item.status || {};
-                            const snippet = fullData.snippet || item.snippet || {};
-                            const stats = fullData.statistics || {};
-
-                            return {
-                                id: vidId,
-                                title: snippet.title || 'Untitled',
-                                description: snippet.description || '',
-                                thumbnail: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || '',
-                                privacy: status.privacyStatus || 'public',
-                                publishAt: status.publishAt || snippet.publishedAt,
-                                uploadDate: snippet.publishedAt,
-                                isShort: (snippet.title || '').toLowerCase().includes('#shorts'),
-                                channelTitle: channelObj.title,
-                                viewCount: parseInt(stats.viewCount || '0', 10),
-                                likeCount: parseInt(stats.likeCount || '0', 10),
-                                commentCount: parseInt(stats.commentCount || '0', 10)
-                            };
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+                const data = await res.json();
+                if (data.models && elements.selectGeminiModel) {
+                    elements.selectGeminiModel.innerHTML = '';
+                    data.models
+                        .filter(m => m.name.includes('gemini'))
+                        .forEach(m => {
+                            const modelId = m.name.replace('models/', '');
+                            const opt = document.createElement('option');
+                            opt.value = modelId;
+                            opt.textContent = `${modelId} ${modelId.includes('3.6') ? '(Default - Low Reasoning)' : ''}`;
+                            elements.selectGeminiModel.appendChild(opt);
                         });
-                        showToast(`Berhasil memuat ${state.liveChannelVideos.length} video dari YouTube!`, 'success');
-                        renderVideoHistory();
-                    }
+                    showToast('Daftar model Gemini berhasil diperbarui!', 'success');
                 }
             } catch (err) {
-                console.error('Fetch live videos error:', err);
-                showToast('Gagal memuat video live dari YouTube', 'error');
+                showToast('Gagal memuat list model: ' + err.message, 'error');
             }
         }
 
-        function renderVideoHistory() {
-            let history = [];
+        async function testSupabaseConnection() {
+            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url');
+            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key');
+            if (!url || !key) {
+                showToast('Masukkan URL & Anon Key Supabase terlebih dahulu!', 'error');
+                return;
+            }
             try {
-                history = JSON.parse(localStorage.getItem('yt_automator_history') || '[]');
-            } catch (e) { history = []; }
-
-            let combined = [...state.liveChannelVideos];
-            history.forEach(h => {
-                if (!combined.some(v => v.id === h.id)) {
-                    combined.push(h);
+                if (window.supabase) {
+                    const client = window.supabase.createClient(url, key);
+                    const { data, error } = await client.from('profiles').select('id').limit(1);
+                    if (error && error.code !== 'PGRST116') throw error;
+                    showToast('🎉 Koneksi ke Supabase BERHASIL & Terverifikasi!', 'success');
+                } else {
+                    showToast('SDK Supabase belum siap', 'error');
                 }
-            });
-
-            // Filter
-            if (state.filterConfig.visibility.length > 0) {
-                combined = combined.filter(v => state.filterConfig.visibility.includes(v.privacy));
-            }
-            if (state.filterConfig.viewsValue !== null) {
-                combined = combined.filter(v => {
-                    const views = v.viewCount || 0;
-                    return state.filterConfig.viewsCondition === 'greater'
-                        ? views >= state.filterConfig.viewsValue
-                        : views <= state.filterConfig.viewsValue;
-                });
-            }
-
-            // Sort
-            if (state.filterConfig.sortBy === 'most_viewed') {
-                combined.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
-            } else {
-                combined.sort((a, b) => new Date(b.publishAt || b.uploadDate) - new Date(a.publishAt || a.uploadDate));
-            }
-
-            // Update stats
-            const total = combined.length;
-            const shorts = combined.filter(v => v.isShort).length;
-            const regular = total - shorts;
-            const scheduled = combined.filter(v => v.privacy === 'scheduled' || (v.publishAt && new Date(v.publishAt) > new Date())).length;
-
-            if (elements.statTotalCount) elements.statTotalCount.textContent = total;
-            if (elements.statShortsCount) elements.statShortsCount.textContent = shorts;
-            if (elements.statVideosCount) elements.statVideosCount.textContent = regular;
-            if (elements.statScheduledCount) elements.statScheduledCount.textContent = scheduled;
-
-            const activeChips = document.getElementById('active-filter-chips');
-            const activeTagsBar = document.getElementById('active-filter-tags');
-            if (activeChips && activeTagsBar) {
-                activeChips.innerHTML = '';
-                let filterCount = 0;
-                if (state.filterConfig.sortBy !== 'newest') {
-                    activeChips.innerHTML += `<span class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-md border border-slate-700">Urut: Paling Banyak Ditonton</span>`;
-                    filterCount++;
-                }
-                if (state.filterConfig.visibility.length > 0) {
-                    activeChips.innerHTML += `<span class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-md border border-slate-700">Visibilitas: ${state.filterConfig.visibility.join(', ')}</span>`;
-                    filterCount++;
-                }
-                if (state.filterConfig.viewsValue !== null) {
-                    activeChips.innerHTML += `<span class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-md border border-slate-700">Penayangan ${state.filterConfig.viewsCondition === 'greater' ? '>' : '<'} ${state.filterConfig.viewsValue}</span>`;
-                    filterCount++;
-                }
-                if (filterCount > 0) activeTagsBar.classList.remove('hidden');
-                else activeTagsBar.classList.add('hidden');
-            }
-
-            if (!elements.historyVerticalContainer || !elements.historyEmptyState) return;
-
-            if (combined.length === 0) {
-                elements.historyEmptyState.classList.remove('hidden');
-                elements.historyVerticalContainer.classList.add('hidden');
-            } else {
-                elements.historyEmptyState.classList.add('hidden');
-                elements.historyVerticalContainer.classList.remove('hidden');
-                elements.historyVerticalContainer.innerHTML = '';
-
-                combined.forEach(item => {
-                    const isScheduled = item.privacy === 'scheduled' || (item.publishAt && new Date(item.publishAt) > new Date());
-                    const pubDate = new Date(item.publishAt || item.uploadDate);
-                    const formattedDate = pubDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ', ' + pubDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-                    const card = document.createElement('div');
-                    card.className = 'bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition shadow flex flex-col justify-between';
-                    
-                    card.innerHTML = `
-                        <div class="relative aspect-video bg-black">
-                            <img src="${item.thumbnail || 'https://placehold.co/600x337/1e293b/94a3b8?text=YT+Video'}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x337/1e293b/94a3b8?text=No+Thumbnail'">
-                            <div class="absolute top-2 left-2 flex gap-1">
-                                ${item.isShort ? '<span class="bg-red-600 text-white text-[10px] font-black uppercase px-1.5 py-0.5 rounded">Shorts</span>' : ''}
-                                ${isScheduled ? '<span class="bg-amber-500/90 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded shadow flex items-center gap-1"><i class="fa-solid fa-clock"></i> Dijadwalkan</span>' : '<span class="bg-emerald-600/90 text-white font-bold text-[10px] px-2 py-0.5 rounded shadow flex items-center gap-1"><i class="fa-solid fa-globe"></i> Publik</span>'}
-                            </div>
-                        </div>
-                        <div class="p-3 space-y-2 flex-1 flex flex-col justify-between text-xs">
-                            <div>
-                                <h4 class="font-bold text-slate-100 line-clamp-2 leading-snug">${item.title}</h4>
-                                <p class="text-[11px] text-slate-400 mt-1">${formattedDate}</p>
-                            </div>
-                            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-slate-400 text-[11px]">
-                                ${!isScheduled ? `
-                                    <div class="flex items-center gap-3">
-                                        <span title="Penayangan"><i class="fa-solid fa-chart-simple text-brand-400"></i> ${item.viewCount || 0}</span>
-                                        <span title="Suka"><i class="fa-regular fa-thumbs-up text-blue-400"></i> ${item.likeCount || 0}</span>
-                                        <span title="Komentar"><i class="fa-regular fa-comment text-emerald-400"></i> ${item.commentCount || 0}</span>
-                                    </div>
-                                ` : `
-                                    <span class="text-amber-400 font-medium"><i class="fa-solid fa-clock mr-1"></i> Akan tayang</span>
-                                `}
-                                <a href="https://youtu.be/${item.id}" target="_blank" class="text-brand-400 hover:text-brand-300 font-medium">Tonton <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
-                            </div>
-                        </div>
-                    `;
-
-                    elements.historyVerticalContainer.appendChild(card);
-                });
+            } catch (err) {
+                showToast('Gagal koneksi Supabase: ' + err.message, 'error');
             }
         }
 
-        function setupEventListeners() {
-            const btnFilter = document.getElementById('btn-open-yt-filter');
-            if (btnFilter) {
-                btnFilter.onclick = openYtFilterModal;
+        function initDOM() {
+            elements.inputGeminiKey = document.getElementById('input-gemini-key');
+            elements.selectGeminiModel = document.getElementById('select-gemini-model');
+            elements.inputOAuthClientId = document.getElementById('input-oauth-client-id');
+            elements.selectDefaultPrivacy = document.getElementById('select-default-privacy');
+            elements.selectDefaultCategory = document.getElementById('select-default-category');
+            elements.selectDefaultKids = document.getElementById('select-default-kids');
+            elements.inputSupabaseUrl = document.getElementById('input-supabase-url');
+            elements.inputSupabaseKey = document.getElementById('input-supabase-key');
+
+            const currentOrigin = window.location.origin + window.location.pathname;
+            const uriDisplay = document.getElementById('txt-redirect-uri-display');
+            const tutorialDisplay = document.getElementById('tutorial-uri-display');
+            if (uriDisplay) uriDisplay.textContent = currentOrigin;
+            if (tutorialDisplay) tutorialDisplay.textContent = currentOrigin;
+        }
+
+        function loadSettings() {
+            try {
+                if (elements.inputGeminiKey) elements.inputGeminiKey.value = localStorage.getItem('yt_automator_gemini_key') || '';
+                if (elements.selectGeminiModel) elements.selectGeminiModel.value = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
+                if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = localStorage.getItem('yt_automator_oauth_client_id') || '';
+                if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = localStorage.getItem('yt_automator_default_privacy') || 'scheduled';
+                if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = localStorage.getItem('yt_automator_default_category') || '17';
+                if (elements.selectDefaultKids) elements.selectDefaultKids.value = localStorage.getItem('yt_automator_default_kids') || 'false';
+                if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = localStorage.getItem('yt_automator_supabase_url') || '';
+                if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = localStorage.getItem('yt_automator_supabase_key') || '';
+
+                const savedRole = localStorage.getItem('yt_automator_user_role') || 'guest';
+                const savedExp = localStorage.getItem('yt_automator_user_expired');
+                const savedName = localStorage.getItem('yt_automator_user_name');
+                applyUserPermissions(savedRole, savedExp, savedName || 'Member');
+
+                loadConnectedChannels();
+            } catch (e) {
+                console.error("Error loading settings:", e);
             }
         }
 
-        // Application Initialization
-        document.addEventListener('DOMContentLoaded', () => {
+        function saveSettings() {
+            try {
+                if (elements.inputGeminiKey) localStorage.setItem('yt_automator_gemini_key', elements.inputGeminiKey.value.trim());
+                if (elements.selectGeminiModel) localStorage.setItem('yt_automator_gemini_model', elements.selectGeminiModel.value);
+                if (elements.inputOAuthClientId) localStorage.setItem('yt_automator_oauth_client_id', elements.inputOAuthClientId.value.trim());
+                if (elements.selectDefaultPrivacy) localStorage.setItem('yt_automator_default_privacy', elements.selectDefaultPrivacy.value);
+                if (elements.selectDefaultCategory) localStorage.setItem('yt_automator_default_category', elements.selectDefaultCategory.value);
+                if (elements.selectDefaultKids) localStorage.setItem('yt_automator_default_kids', elements.selectDefaultKids.value);
+                if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', elements.inputSupabaseUrl.value.trim());
+                if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', elements.inputSupabaseKey.value.trim());
+
+                showToast('Pengaturan berhasil disimpan!', 'success');
+            } catch (e) {
+                showToast('Gagal menyimpan pengaturan: ' + e.message, 'error');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
             initDOM();
             loadSettings();
-            loadConnectedChannels();
-            checkOAuthHashRedirect();
-            setupEventListeners();
+            renderVideoHistory();
         });
     </script>
 </body>
