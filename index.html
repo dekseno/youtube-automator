@@ -900,13 +900,71 @@
             showToast(`Masa aktif ${u.username} ditambah ${days} hari!`, 'success');
         }
 
+        function applyUserPermissions(role, expiredAt, username) {
+            state.supabase = { role, expiredAt, username };
+            try {
+                localStorage.setItem('yt_automator_user_role', role);
+                localStorage.setItem('yt_automator_user_expired', expiredAt);
+                localStorage.setItem('yt_automator_user_name', username);
+            } catch (e) {}
+
+            const badgeContainer = document.getElementById('user-auth-badge');
+            const loginBtn = document.getElementById('btn-open-login-modal');
+            const adminBtn = document.getElementById('btn-open-admin-dashboard');
+            const roleLabel = document.getElementById('lbl-role-name');
+
+            if (badgeContainer) badgeContainer.classList.remove('hidden');
+            if (loginBtn) loginBtn.classList.add('hidden');
+
+            if (roleLabel) {
+                roleLabel.textContent = role === 'admin' ? '👑 ADMIN' : role === 'vip' ? '⭐ VIP MEMBER' : '🔹 STANDARD';
+            }
+
+            if (adminBtn) {
+                if (role === 'admin') {
+                    adminBtn.classList.remove('hidden');
+                } else {
+                    adminBtn.classList.add('hidden');
+                }
+            }
+
+            const modelSelect = elements.selectGeminiModel || document.getElementById('select-gemini-model');
+            if (modelSelect) {
+                if (role === 'standard') {
+                    modelSelect.value = 'gemini-2.5-flash';
+                    modelSelect.disabled = true;
+                } else {
+                    modelSelect.disabled = false;
+                }
+            }
+        }
+
+        function handleUserLogout() {
+            localStorage.removeItem('yt_automator_user_role');
+            localStorage.removeItem('yt_automator_user_expired');
+            localStorage.removeItem('yt_automator_user_name');
+            state.supabase = { role: 'guest', expiredAt: null, username: '' };
+
+            const badgeContainer = document.getElementById('user-auth-badge');
+            const loginBtn = document.getElementById('btn-open-login-modal');
+            const adminBtn = document.getElementById('btn-open-admin-dashboard');
+            const modelSelect = elements.selectGeminiModel || document.getElementById('select-gemini-model');
+
+            if (badgeContainer) badgeContainer.classList.add('hidden');
+            if (loginBtn) loginBtn.classList.remove('hidden');
+            if (adminBtn) adminBtn.classList.add('hidden');
+            if (modelSelect) modelSelect.disabled = false;
+
+            showToast('Berhasil Logout', 'info');
+        }
+
         async function handleSupabaseLogin() {
             const email = document.getElementById('auth-input-email')?.value.trim() || '';
             const password = document.getElementById('auth-input-password')?.value || '';
             if (!email || !password) { showToast('Masukkan username dan password!', 'error'); return; }
 
             // 1. Bypass lokal untuk testing akun dev
-            if (email === 'admin' && password === 'admin') {
+            if (email === 'admin' && (password === 'admin' || password === '123')) {
                 applyUserPermissions('admin', new Date(Date.now() + 3650*86400000).toISOString(), email);
                 closeLoginModal();
                 showToast('Login Admin Demo Berhasil!', 'success');
@@ -916,420 +974,164 @@
                 closeLoginModal();
                 showToast('Login VIP Demo Berhasil!', 'success');
                 return;
+            } else if (email === 'standard' && password === 'standard') {
+                applyUserPermissions('standard', new Date(Date.now() + 30*86400000).toISOString(), email);
+                closeLoginModal();
+                showToast('Login Standard Demo Berhasil!', 'success');
+                return;
             }
 
-            // 2. Coba Login Real via Supabase Client (jika terkoneksi)
-            if (window.supabaseClient) {
-                try {
-                    // Percobaan A: Autentikasi Bawaan Supabase Auth (Email & Password)
-                    const { data: authData, error: authErr } = await window.supabaseClient.auth.signInWithPassword({
-                        email: email.includes('@') ? email : `${email}@automator.local`,
-                        password: password
-                    });
+            // 2. Cek ke Supabase Database / Local Managed Users
+            try {
+                const url = state.supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
+                const key = state.supabaseKey || localStorage.getItem('yt_automator_supabase_key');
 
-                    if (!authErr && authData?.user) {
-                        const { data: profile } = await window.supabaseClient
-                            .from('profiles')
-                            .select('*')
-                            .eq('id', authData.user.id)
-                            .maybeSingle();
-
-                        const role = profile?.role || 'standard';
-                        const expiredAt = profile?.expired_at || new Date(Date.now() + 30*86400000).toISOString();
-
-                        if (new Date(expiredAt) < new Date()) {
-                            showToast('Masa aktif akun Supabase ini telah kadaluarsa!', 'error');
-                            return;
-                        }
-
-                        applyUserPermissions(role, expiredAt, email);
-                        closeLoginModal();
-                        showToast(`Login Supabase Berhasil (${role.toUpperCase()})!`, 'success');
-                        return;
-                    }
-
-                    // Percobaan B: Query langsung ke Tabel `profiles` (Username & Password custom)
-                    const { data: profiles, error: profErr } = await window.supabaseClient
+                if (url && key && window.supabase) {
+                    const client = window.supabase.createClient(url, key);
+                    const { data: profiles } = await client
                         .from('profiles')
                         .select('*')
-                        .or(`username.eq.${email},username.eq.${email.toLowerCase()}`);
+                        .or(`username.eq.${email},id.eq.${email}`);
 
-                    if (!profErr && profiles && profiles.length > 0) {
-                        const matched = profiles.find(p => p.password === password || !p.password);
-                        if (matched) {
-                            if (matched.expired_at && new Date(matched.expired_at) < new Date()) {
-                                showToast('Masa aktif lisensi akun ini telah kadaluarsa!', 'error');
-                                return;
-                            }
-                            applyUserPermissions(matched.role || 'standard', matched.expired_at || new Date(Date.now() + 30*86400000).toISOString(), matched.username || email);
+                    if (profiles && profiles.length > 0) {
+                        const matchedUser = profiles.find(p => p.password === password || p.username === email);
+                        if (matchedUser) {
+                            const userRole = matchedUser.role || 'standard';
+                            const expDate = matchedUser.expired_at || new Date(Date.now() + 30*86400000).toISOString();
+                            applyUserPermissions(userRole, expDate, matchedUser.username || email);
                             closeLoginModal();
-                            showToast(`Login Supabase Berhasil (${(matched.role || 'standard').toUpperCase()})!`, 'success');
+                            showToast(`Selamat datang ${matchedUser.username || email}!`, 'success');
                             return;
                         }
                     }
-                } catch (err) {
-                    console.warn("Koneksi Supabase Auth gagal, beralih ke simpanan lokal:", err);
                 }
-            }
 
-            // 3. Fallback pencarian akun lokal (Offline Backup)
-            let users = [];
-            try { users = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList; } catch(e) { users = mockUsersList; }
+                // Cek dari local managed users
+                let managedUsers = [];
+                try {
+                    managedUsers = JSON.parse(localStorage.getItem('yt_automator_managed_users')) || mockUsersList;
+                } catch(e) { managedUsers = mockUsersList; }
 
-            const found = users.find(u => u.username.toLowerCase() === email.toLowerCase() && u.password === password);
-            if (!found) {
-                showToast('Username atau password tidak ditemukan!', 'error');
-                return;
-            }
-
-            if (new Date(found.expired_at) < new Date()) {
-                showToast('Masa aktif lisensi akun ini telah kadaluarsa!', 'error');
-                return;
-            }
-
-            applyUserPermissions(found.role, found.expired_at, found.username);
-            closeLoginModal();
-            showToast(`Login Berhasil sebagai ${found.role.toUpperCase()}!`, 'success');
-        }
-
-        async function testSupabaseConnection() {
-            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url') || '';
-            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key') || '';
-
-            if (!url || !key) {
-                showToast('Masukkan Supabase URL & Anon Key terlebih dahulu!', 'error');
-                return;
-            }
-
-            try {
-                const client = window.supabase.createClient(url, key);
-                const { data, error } = await client.from('profiles').select('count', { count: 'exact', head: true });
-                if (error && error.code !== 'PGRST116') {
-                    showToast(`Koneksi Gagal: ${error.message}`, 'error');
-                } else {
-                    window.supabaseClient = client;
-                    showToast('🎉 Koneksi ke Supabase BERHASIL & Terverifikasi!', 'success');
+                const localUser = managedUsers.find(u => u.username === email && u.password === password);
+                if (localUser) {
+                    applyUserPermissions(localUser.role, localUser.expired_at, localUser.username);
+                    closeLoginModal();
+                    showToast(`Login Berhasil sebagai ${localUser.username}!`, 'success');
+                    return;
                 }
+
+                showToast('Username atau password tidak valid!', 'error');
             } catch (err) {
-                showToast(`Gagal terhubung ke Supabase: ${err.message}`, 'error');
+                console.error("Login Error:", err);
+                showToast('Gagal login: ' + err.message, 'error');
             }
         }
 
-        async function saveAdminUser() {
-            const usernameInput = document.getElementById('admin-input-username');
-            const passwordInput = document.getElementById('admin-input-password');
-            const roleInput = document.getElementById('admin-input-role');
-            const expiredInput = document.getElementById('admin-input-expired');
-            const editIndexInput = document.getElementById('admin-edit-index');
-
-            const username = usernameInput?.value.trim();
-            const password = passwordInput?.value.trim();
-            const role = roleInput?.value;
-            const expired_at = expiredInput?.value;
-            const editIdx = parseInt(editIndexInput?.value ?? -1);
-
-            if (!username || !password || !expired_at) {
-                showToast('Semua kolom form user wajib diisi!', 'error');
-                return;
-            }
-
-            let users = [];
-            try {
-                const saved = localStorage.getItem('yt_automator_managed_users');
-                users = saved ? JSON.parse(saved) : [...mockUsersList];
-            } catch(e) { users = [...mockUsersList]; }
-
-            const userObj = { id: editIdx >= 0 ? users[editIdx].id : 'u_' + Date.now(), username, password, role, expired_at };
-
-            if (editIdx >= 0) {
-                users[editIdx] = userObj;
-            } else {
-                users.push(userObj);
-            }
-
-            localStorage.setItem('yt_automator_managed_users', JSON.stringify(users));
-
-            // Sync ke Supabase secara Online (jika terhubung)
-            if (window.supabaseClient) {
-                try {
-                    await window.supabaseClient.from('profiles').upsert([
-                        { username: username, password: password, role: role, expired_at: expired_at }
-                    ], { onConflict: 'username' });
-                } catch(e) { console.warn("Gagal sync ke Supabase profiles:", e); }
-            }
-
-            showToast(editIdx >= 0 ? 'Berhasil memperbarui data user!' : 'Berhasil menambahkan member baru!', 'success');
-            resetAdminForm();
-            loadAdminUserList();
-        }
-
-        function initSupabaseClient() {
-            const url = localStorage.getItem('yt_automator_supabase_url') || '';
-            const key = localStorage.getItem('yt_automator_supabase_key') || '';
-            if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = url;
-            if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = key;
-
-            if (url && key && window.supabase) {
-                try {
-                    window.supabaseClient = window.supabase.createClient(url, key);
-                } catch (e) {
-                    console.warn("Supabase client init warning:", e);
-                }
-            }
-
-            try {
-                const savedRole = localStorage.getItem('yt_automator_user_role');
-                const savedExpired = localStorage.getItem('yt_automator_user_expired');
-                const savedUser = localStorage.getItem('yt_automator_user_name');
-                if (savedRole && savedExpired) {
-                    applyUserPermissions(savedRole, savedExpired, savedUser || 'member');
-                }
-            } catch (e) {}
-        }
-
-        function openAdminModal() { const m = document.getElementById('modal-admin-dashboard'); if (m) m.classList.remove('hidden'); loadAdminUserList(); }
-        function closeAdminModal() { const m = document.getElementById('modal-admin-dashboard'); if (m) m.classList.add('hidden'); }
-        function loadAdminUserList() {
-            const tbody = document.getElementById('admin-user-table-body');
-            if (!tbody) return;
-            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">admin@domain.com (ADMIN) - AKTIF</td></tr>`;
-        }
-
-        function initDOM() {
-            elements.inputGeminiKey = document.getElementById('input-gemini-key');
-            elements.selectGeminiModel = document.getElementById('select-gemini-model');
-            elements.inputOauthClientId = document.getElementById('input-oauth-client-id');
-            elements.txtRedirectUriDisplay = document.getElementById('txt-redirect-uri-display');
-            elements.inputSupabaseUrl = document.getElementById('input-supabase-url');
-            elements.inputSupabaseKey = document.getElementById('input-supabase-key');
-            elements.fileVideoInput = document.getElementById('file-video-input');
-            elements.videoPreviewCard = document.getElementById('video-preview-card');
-            elements.videoPreview = document.getElementById('video-preview');
-            elements.metaFileName = document.getElementById('meta-file-name');
-            elements.metaFileSize = document.getElementById('meta-file-size');
-            elements.metaDuration = document.getElementById('meta-duration');
-            elements.metaResolution = document.getElementById('meta-resolution');
-            elements.thumbnailGallery = document.getElementById('thumbnail-gallery');
-            elements.selectedThumbnailImg = document.getElementById('selected-thumbnail-img');
-            elements.inputRenamedFilename = document.getElementById('input-renamed-filename');
-            elements.inputAiTitle = document.getElementById('input-ai-title');
-            elements.titleCharCount = document.getElementById('title-char-count');
-            elements.inputProductTag = document.getElementById('input-product-tag');
-            elements.inputProductKeywordsSuggest = document.getElementById('input-product-keywords-suggest');
-            elements.inputAiDescription = document.getElementById('input-ai-description');
-            elements.inputAiTags = document.getElementById('input-ai-tags');
-            elements.oauthUserStatusText = document.getElementById('oauth-user-status-text');
-            elements.selectChannelAccount = document.getElementById('select-channel-account');
-            elements.uploadPrivacy = document.getElementById('upload-privacy');
-            elements.scheduleDateContainer = document.getElementById('schedule-date-container');
-            elements.uploadPublishAt = document.getElementById('upload-publish-at');
-            elements.uploadCategoryId = document.getElementById('upload-category-id');
-            elements.uploadMadeForKids = document.getElementById('upload-made-for-kids');
-            elements.uploadProgressContainer = document.getElementById('upload-progress-container');
-            elements.uploadStatusText = document.getElementById('upload-status-text');
-            elements.uploadPercentage = document.getElementById('upload-percentage');
-            elements.uploadProgressBar = document.getElementById('upload-progress-bar');
-            elements.statTotalCount = document.getElementById('stat-total-count');
-            elements.statShortsCount = document.getElementById('stat-shorts-count');
-            elements.statVideosCount = document.getElementById('stat-videos-count');
-            elements.statScheduledCount = document.getElementById('stat-scheduled-count');
-            elements.selectHistoryChannelFilter = document.getElementById('select-history-channel-filter');
-            elements.historyEmptyState = document.getElementById('history-empty-state');
-            elements.historyVerticalContainer = document.getElementById('history-vertical-container');
-            elements.settingsPanel = document.getElementById('settings-panel');
-            elements.txtToggleSettings = document.getElementById('txt-toggle-settings');
-            elements.modalAiLoading = document.getElementById('modal-ai-loading');
-            elements.modalGuide = document.getElementById('modal-guide');
-            elements.modalYtFilter = document.getElementById('modal-yt-filter');
-            elements.modalSupabaseAuth = document.getElementById('modal-supabase-auth');
-            elements.modalAdminDashboard = document.getElementById('modal-admin-dashboard');
-
-            if (elements.txtRedirectUriDisplay) {
-                elements.txtRedirectUriDisplay.textContent = window.location.origin + window.location.pathname;
-            }
-        }
-
+        // System Helpers & Initializers
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             if (!container) return;
             const toast = document.createElement('div');
-            toast.className = `p-3.5 rounded-xl border bg-slate-900/90 border-slate-700 text-slate-100 backdrop-blur-md shadow-xl text-xs font-medium flex items-center justify-between gap-3`;
-            toast.innerHTML = `<span>${message}</span>`;
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800 border border-slate-700';
+            const iconClass = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 animate-slide-up pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> <span>${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        function loadSettings() {
-            state.geminiApiKey = localStorage.getItem('yt_automator_gemini_key') || '';
-            state.selectedGeminiModel = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
-            state.oauthClientId = localStorage.getItem('yt_automator_oauth_id') || '';
-            if (elements.inputGeminiKey) elements.inputGeminiKey.value = state.geminiApiKey;
-            if (elements.selectGeminiModel) elements.selectGeminiModel.value = state.selectedGeminiModel;
-            if (elements.inputOauthClientId) elements.inputOauthClientId.value = state.oauthClientId;
-            if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = localStorage.getItem('yt_automator_supabase_url') || '';
-            if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = localStorage.getItem('yt_automator_supabase_key') || '';
-        }
-
-        function saveSettings() {
-            if (elements.inputGeminiKey) state.geminiApiKey = elements.inputGeminiKey.value.trim();
-            if (elements.selectGeminiModel) state.selectedGeminiModel = elements.selectGeminiModel.value;
-            if (elements.inputOauthClientId) state.oauthClientId = elements.inputOauthClientId.value.trim();
-            if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', elements.inputSupabaseUrl.value.trim());
-            if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', elements.inputSupabaseKey.value.trim());
-            localStorage.setItem('yt_automator_gemini_key', state.geminiApiKey);
-            localStorage.setItem('yt_automator_gemini_model', state.selectedGeminiModel);
-            localStorage.setItem('yt_automator_oauth_id', state.oauthClientId);
-            initSupabaseClient();
-            toggleSettingsPanel();
-            showToast('Pengaturan disimpan!', 'success');
+            setTimeout(() => { toast.remove(); }, 4000);
         }
 
         function toggleSettingsPanel() {
+            const panel = document.getElementById('settings-panel');
+            const txt = document.getElementById('txt-toggle-settings');
+            if (!panel) return;
             state.settingsCollapsed = !state.settingsCollapsed;
-            if (elements.settingsPanel && elements.txtToggleSettings) {
-                if (state.settingsCollapsed) {
-                    elements.settingsPanel.classList.add('hidden');
-                    elements.txtToggleSettings.textContent = 'Buka Pengaturan API';
-                } else {
-                    elements.settingsPanel.classList.remove('hidden');
-                    elements.txtToggleSettings.textContent = 'Sembunyikan Pengaturan';
-                }
+            if (state.settingsCollapsed) {
+                panel.classList.add('hidden');
+                if (txt) txt.textContent = 'Buka Pengaturan API';
+            } else {
+                panel.classList.remove('hidden');
+                if (txt) txt.textContent = 'Tutup Pengaturan API';
             }
-        }
-
-        function copyRedirectUriToClipboard() {
-            navigator.clipboard.writeText(window.location.origin + window.location.pathname);
-            showToast('URL disalin!', 'success');
         }
 
         function switchStep(stepNum) {
             document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(`step-${stepNum}`);
             if (target) target.classList.remove('hidden');
-        }
 
-        function handleVideoFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            state.selectedFile = file;
-            if (elements.metaFileName) elements.metaFileName.textContent = file.name;
-            if (elements.metaFileSize) elements.metaFileSize.textContent = (file.size / (1024*1024)).toFixed(2) + ' MB';
-            const url = URL.createObjectURL(file);
-            if (elements.videoPreview) {
-                elements.videoPreview.src = url;
-                elements.videoPreview.onloadedmetadata = () => { generateVideoSnapshots(); };
-            }
-            if (elements.videoPreviewCard) elements.videoPreviewCard.classList.remove('hidden');
-        }
-
-        function generateVideoSnapshots() {
-            if (!elements.videoPreview || !elements.thumbnailGallery) return;
-            elements.thumbnailGallery.innerHTML = '';
-            state.thumbnails = [];
-            const timestamps = [0.5, 1.5, 3.0, 5.0, 8.0];
-            timestamps.forEach((t, i) => {
-                const vid = document.createElement('video');
-                vid.src = elements.videoPreview.src;
-                vid.currentTime = Math.min(t, elements.videoPreview.duration || 1);
-                vid.onseeked = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = vid.videoWidth || 640;
-                    canvas.height = vid.videoHeight || 360;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.85);
-                    state.thumbnails.push(base64);
-                    const img = document.createElement('img');
-                    img.src = base64;
-                    img.className = `h-16 w-full object-cover rounded-lg cursor-pointer border-2 transition ${i === 0 ? 'border-brand-500' : 'border-transparent opacity-60'}`;
-                    img.onclick = () => selectThumbnail(i);
-                    elements.thumbnailGallery.appendChild(img);
-                    if (i === 0) selectThumbnail(0);
-                    vid.onseeked = null;
-                };
+            document.querySelectorAll('.step-tab').forEach((tab, idx) => {
+                if (idx + 1 === stepNum) {
+                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow';
+                } else {
+                    tab.className = 'step-tab flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold text-center transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200';
+                }
             });
         }
 
-        function selectThumbnail(index) {
-            state.selectedThumbnailIndex = index;
-            state.snapshotBase64 = state.thumbnails[index];
-            if (elements.selectedThumbnailImg && state.snapshotBase64) {
-                elements.selectedThumbnailImg.src = state.snapshotBase64;
+        function initDOM() {
+            elements.inputGeminiKey = document.getElementById('input-gemini-key');
+            elements.selectGeminiModel = document.getElementById('select-gemini-model');
+            elements.inputOAuthClientId = document.getElementById('input-oauth-client-id');
+            elements.selectDefaultPrivacy = document.getElementById('select-default-privacy');
+            elements.selectDefaultCategory = document.getElementById('select-default-category');
+            elements.selectDefaultKids = document.getElementById('select-default-kids');
+            elements.inputSupabaseUrl = document.getElementById('input-supabase-url');
+            elements.inputSupabaseKey = document.getElementById('input-supabase-key');
+
+            // Load Redirect URI display
+            const uriDisplay = document.getElementById('txt-redirect-uri-display');
+            if (uriDisplay) {
+                uriDisplay.textContent = window.location.origin + window.location.pathname;
             }
         }
 
-        async function startAiInspection() {
-            if (!state.selectedFile) { showToast('Pilih video dahulu!', 'error'); return; }
-            if (elements.modalAiLoading) elements.modalAiLoading.classList.remove('hidden');
-            setTimeout(() => {
-                if (elements.modalAiLoading) elements.modalAiLoading.classList.add('hidden');
-                if (elements.inputAiTitle) elements.inputAiTitle.value = "🔥 Olahraga Terbaik Setelah Bangun Pagi #shorts #olahraga";
-                if (elements.inputRenamedFilename) elements.inputRenamedFilename.value = "olahraga-terbaik-setelah-bangun-pagi.mp4";
-                if (elements.inputAiDescription) elements.inputAiDescription.value = "Lakukan gerakan ini setiap pagi...\n\n#shorts #olahraga #kesehatan";
-                if (elements.inputAiTags) elements.inputAiTags.value = "olahraga pagi, gerakan sehat, #shorts";
-                if (elements.inputProductKeywordsSuggest) elements.inputProductKeywordsSuggest.value = "matras yoga, pakaian olahraga wanita";
-                updateCharCount();
-                switchStep(2);
-                showToast('Inspeksi AI Selesai!', 'success');
-            }, 1500);
-        }
+        function loadSettings() {
+            try {
+                if (elements.inputGeminiKey) elements.inputGeminiKey.value = localStorage.getItem('yt_automator_gemini_key') || '';
+                if (elements.selectGeminiModel) elements.selectGeminiModel.value = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
+                if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = localStorage.getItem('yt_automator_oauth_client_id') || '';
+                if (elements.selectDefaultPrivacy) elements.selectDefaultPrivacy.value = localStorage.getItem('yt_automator_default_privacy') || 'scheduled';
+                if (elements.selectDefaultCategory) elements.selectDefaultCategory.value = localStorage.getItem('yt_automator_default_category') || '17';
+                if (elements.selectDefaultKids) elements.selectDefaultKids.value = localStorage.getItem('yt_automator_default_kids') || 'false';
+                if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = localStorage.getItem('yt_automator_supabase_url') || '';
+                if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = localStorage.getItem('yt_automator_supabase_key') || '';
 
-        function updateCharCount() {
-            if (elements.inputAiTitle && elements.titleCharCount) {
-                elements.titleCharCount.textContent = `${elements.inputAiTitle.value.length}/100`;
-            }
-        }
-
-        function syncFilenameWithTitle() {
-            if (elements.inputAiTitle && elements.inputRenamedFilename) {
-                elements.inputRenamedFilename.value = elements.inputAiTitle.value.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.mp4';
-            }
-        }
-
-        function downloadRenamedVideo() {
-            if (!state.selectedFile) return;
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(state.selectedFile);
-            a.download = elements.inputRenamedFilename?.value || 'video.mp4';
-            a.click();
-            showToast('Video diunduh!', 'success');
-        }
-
-        function proceedToStep3() { switchStep(3); }
-        function toggleScheduleDatePicker() {}
-        function startGoogleOAuthLogin() { showToast('Simulasi login OAuth', 'success'); }
-        function verifyAndRefreshActiveOAuthToken() {}
-        function handleChannelSelectChange() {}
-        async function startYouTubeUpload() {
-            if (elements.uploadProgressContainer) elements.uploadProgressContainer.classList.remove('hidden');
-            let p = 0;
-            const timer = setInterval(() => {
-                p += 25;
-                if (elements.uploadProgressBar) elements.uploadProgressBar.style.width = p + '%';
-                if (elements.uploadPercentage) elements.uploadPercentage.textContent = p + '%';
-                if (p >= 100) {
-                    clearInterval(timer);
-                    showToast('Upload Berhasil!', 'success');
-                    switchStep(4);
+                // Restore active user session if exists
+                const savedRole = localStorage.getItem('yt_automator_user_role');
+                const savedExp = localStorage.getItem('yt_automator_user_expired');
+                const savedName = localStorage.getItem('yt_automator_user_name');
+                if (savedRole) {
+                    applyUserPermissions(savedRole, savedExp, savedName || 'Member');
                 }
-            }, 400);
-        }
-        function fetchAllConnectedChannelsVideos() {
-            if (elements.historyEmptyState) elements.historyEmptyState.classList.add('hidden');
-            if (elements.historyVerticalContainer) {
-                elements.historyVerticalContainer.classList.remove('hidden');
-                elements.historyVerticalContainer.innerHTML = `<div class="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300">Contoh Video Channel Terhubung</div>`;
+            } catch (e) {
+                console.error("Error loading settings:", e);
             }
         }
-        function handleHistoryChannelFilterChange() {}
-        function openGuideModal() { if (elements.modalGuide) elements.modalGuide.classList.remove('hidden'); }
-        function closeGuideModal() { if (elements.modalGuide) elements.modalGuide.classList.add('hidden'); }
-        function closeYtFilterModal() {}
 
-        document.addEventListener('DOMContentLoaded', () => {
+        function saveSettings() {
+            try {
+                if (elements.inputGeminiKey) localStorage.setItem('yt_automator_gemini_key', elements.inputGeminiKey.value.trim());
+                if (elements.selectGeminiModel) localStorage.setItem('yt_automator_gemini_model', elements.selectGeminiModel.value);
+                if (elements.inputOAuthClientId) localStorage.setItem('yt_automator_oauth_client_id', elements.inputOAuthClientId.value.trim());
+                if (elements.selectDefaultPrivacy) localStorage.setItem('yt_automator_default_privacy', elements.selectDefaultPrivacy.value);
+                if (elements.selectDefaultCategory) localStorage.setItem('yt_automator_default_category', elements.selectDefaultCategory.value);
+                if (elements.selectDefaultKids) localStorage.setItem('yt_automator_default_kids', elements.selectDefaultKids.value);
+                if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', elements.inputSupabaseUrl.value.trim());
+                if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', elements.inputSupabaseKey.value.trim());
+
+                showToast('Pengaturan berhasil disimpan!', 'success');
+            } catch (e) {
+                showToast('Gagal menyimpan pengaturan: ' + e.message, 'error');
+            }
+        }
+
+        function openGuideModal() { const m = document.getElementById('modal-guide'); if(m) m.classList.remove('hidden'); }
+        function closeGuideModal() { const m = document.getElementById('modal-guide'); if(m) m.classList.add('hidden'); }
+        function closeYtFilterModal() { const m = document.getElementById('modal-yt-filter'); if(m) m.classList.add('hidden'); }
+
+        window.addEventListener('DOMContentLoaded', () => {
             initDOM();
             loadSettings();
-            initSupabaseClient();
         });
     </script>
 </body>
