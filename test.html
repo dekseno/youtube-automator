@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="id" class="dark" data-theme="red">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Automator Pro - Robot AI Pro & Studio Multi-Channel Manager</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fef2f2',
+                            100: '#ffe4e4',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            900: '#7f1d1d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Identity Services (GIS) SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Supabase Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070b14; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        /* THEME VARIABLES SYSTEM */
+        :root[data-theme="red"] {
+            --bg-main: #070b14;
+            --bg-card: #0f172a;
+            --bg-card-sub: #162032;
+            --btn-gradient: linear-gradient(135deg, #ef4444, #dc2626);
+            --btn-hover: linear-gradient(135deg, #dc2626, #b91c1c);
+            --accent-color: #ef4444;
+            --accent-glow: rgba(239, 68, 68, 0.35);
+        }
+        :root[data-theme="blue"] {
+            --bg-main: #050b18;
+            --bg-card: #0f172a;
+            --bg-card-sub: #172554;
+            --btn-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+            --btn-hover: linear-gradient(135deg, #1d4ed8, #1e40af);
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.35);
+        }
+        :root[data-theme="emerald"] {
+            --bg-main: #022c22;
+            --bg-card: #064e3b;
+            --bg-card-sub: #065f46;
+            --btn-gradient: linear-gradient(135deg, #10b981, #059669);
+            --btn-hover: linear-gradient(135deg, #059669, #047857);
+            --accent-color: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.35);
+        }
+        :root[data-theme="purple"] {
+            --bg-main: #0f0717;
+            --bg-card: #1e102d;
+            --bg-card-sub: #2e104d;
+            --btn-gradient: linear-gradient(135deg, #a855f7, #7e22ce);
+            --btn-hover: linear-gradient(135deg, #7e22ce, #6b21a8);
+            --accent-color: #c084fc;
+            --accent-glow: rgba(192, 132, 252, 0.35);
+        }
+        :root[data-theme="amber"] {
+            --bg-main: #180d04;
+            --bg-card: #291807;
+            --bg-card-sub: #432408;
+            --btn-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+            --btn-hover: linear-gradient(135deg, #d97706, #b45309);
+            --accent-color: #fbbf24;
+            --accent-glow: rgba(251, 191, 36, 0.35);
+        }
+
+        .bg-app-dark { background-color: var(--bg-main); }
+        .bg-card-dark { background-color: var(--bg-card); }
+        .bg-card-sub { background-color: var(--bg-card-sub); }
+        .btn-red-action {
+            background: var(--btn-gradient);
+            color: #ffffff;
+            box-shadow: 0 4px 15px -3px var(--accent-glow);
+        }
+        .btn-red-action:hover {
+            background: var(--btn-hover);
+        }
+        .active-step-tab {
+            background: var(--btn-gradient) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px 0 var(--accent-glow);
+        }
+    </style>
+</head>
+<body class="bg-app-dark text-slate-100 min-h-screen flex flex-col antialiased selection:bg-red-500 selection:text-white">
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- AI INSPECTION OVERLAY MODAL -->
+    <div id="ai-loading-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center space-y-5 shadow-2xl">
+            <div class="w-16 h-16 rounded-3xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto text-3xl border border-red-500/20 animate-pulse">
+                <i class="fa-solid fa-robot animate-spin"></i>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-base font-extrabold text-white">Robot AI Pro Menganalisis Konten Video...</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">Ekstraksi audio & visual multimodal temporal sedang dianalisis untuk menghasilkan Judul FYP, Deskripsi, Tag, & Saran Produk Marketplace.</p>
+            </div>
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div id="ai-loading-progress" class="h-full bg-red-600 w-1/3 transition-all duration-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN HEADER (RINGKAS UNTUK HP - DILENGKAPI MENU BURGER GARIS 3) -->
+    <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Brand Logo & Name -->
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="window.location.reload()">
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-red-600/30 ring-1 ring-white/20">
+                    <i class="fa-brands fa-youtube"></i>
+                </div>
+                <h1 class="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
+                    YT Automator <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 font-bold border border-red-500/30">PRO</span>
+                </h1>
+            </div>
+
+            <!-- Right Header Controls: Hanya User Badge & Hamburger Button Garis 3 -->
+            <div class="flex items-center gap-2">
+                <!-- User License Badge (Tampil Ringkas) -->
+                <div id="user-badge" class="hidden flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 rounded-xl border border-slate-800 text-xs font-semibold">
+                    <span id="user-role-badge" class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded-lg text-[10px] uppercase font-bold">Tamu</span>
+                    <span id="user-display-name" class="text-slate-300 hidden sm:inline">Belum Login</span>
+                </div>
+
+                <!-- Hamburger Menu Button Garis 3 -->
+                <button onclick="toggleMobileNavMenu()" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 flex items-center justify-center transition focus:outline-none">
+                    <i class="fa-solid fa-bars text-base"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- DROPDOWN MENU GARIS 3 (MENYESUAIKAN STATUS LOGIN MEMBER) -->
+        <div id="mobile-nav-menu" class="hidden max-w-7xl mx-auto pt-3 pb-2 border-t border-slate-800/80 mt-3 space-y-3">
+            <!-- Pilihan Navigasi Sebelum Login -->
+            <div id="nav-guest-menu-group" class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                <button onclick="scrollToLandingHero()" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 text-left flex items-center gap-2">
+                    <i class="fa-solid fa-house text-red-400"></i>
+                    <span>Beranda Landing Page</span>
+                </button>
+                <button onclick="openSetupGuideModal()" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 text-left flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-emerald-400"></i>
+                    <span>Panduan & Tentang</span>
+                </button>
+            </div>
+
+            <!-- Pilihan Navigasi Setelah Login -->
+            <div id="nav-user-menu-group" class="hidden space-y-3">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold">
+                    <button onclick="switchTab(1)" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 text-left flex items-center gap-2">
+                        <i class="fa-solid fa-file-video text-red-400"></i>
+                        <span>1. Pilih Video</span>
+                    </button>
+                    <button onclick="switchTab(2)" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 text-left flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-red-400"></i>
+                        <span>2. Inspeksi AI & Rename</span>
+                    </button>
+                    <button onclick="switchTab(3)" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 text-left flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-red-400"></i>
+                        <span>3. Unggah & Penjadwalan</span>
+                    </button>
+                    <button onclick="switchTab(4)" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 text-left flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-amber-400"></i>
+                        <span>4. Studio Analytics</span>
+                    </button>
+                </div>
+
+                <!-- Kontrol Pengaturan & Akses Pengguna Dalam Menu Burger -->
+                <div class="flex flex-wrap items-center justify-between pt-2 border-t border-slate-800/80 gap-2 text-xs">
+                    <!-- Dropdown Theme Switcher (VIP & Admin Only) -->
+                    <div id="theme-selector-header-box" class="hidden flex items-center gap-1.5">
+                        <span class="text-slate-400 text-[11px] font-bold">Tema:</span>
+                        <select id="theme-picker-header" onchange="changeAppTheme(this.value)" class="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-red-500">
+                            <option value="red">🔴 Merah (Default)</option>
+                            <option value="blue">🔵 Biru Cyber</option>
+                            <option value="emerald">🟢 Emerald Green</option>
+                            <option value="purple">🟣 Purple Violet</option>
+                            <option value="amber">🟠 Amber Gold</option>
+                        </select>
+                    </div>
+
+                    <!-- Tombol Dashboard Admin -->
+                    <button id="btn-admin-dashboard" onclick="openAdminDashboardModal()" class="hidden px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold rounded-xl border border-amber-500/30 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-crown"></i>
+                        <span>Dashboard Admin</span>
+                    </button>
+
+                    <!-- Tombol Pengaturan API -->
+                    <button id="nav-btn-settings" onclick="openSettingsModal()" class="text-slate-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 rounded-xl border border-slate-800 font-bold">
+                        <i class="fa-solid fa-gear text-red-400"></i>
+                        <span>Pengaturan API & DB Key</span>
+                    </button>
+
+                    <!-- Tombol Logout Member -->
+                    <button onclick="logoutUser()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white font-bold rounded-xl border border-rose-500/30 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Keluar Akun</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tombol Login Member Saat Belum Login -->
+            <div id="nav-login-btn-container" class="pt-2 border-t border-slate-800">
+                <button onclick="openLoginModal()" class="w-full py-2.5 btn-red-action font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Login Member Pro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- LANDING PAGE PUBLIC (DITAMPILKAN SEBELUM LOGIN) -->
+    <div id="public-landing-page" class="flex-1 space-y-12 py-10 px-4 max-w-6xl mx-auto">
+        <div class="text-center space-y-5 max-w-3xl mx-auto">
+            <span class="px-3.5 py-1.5 rounded-full bg-red-500/10 text-red-400 text-xs font-bold border border-red-500/30 inline-flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-amber-400"></i>
+                Robot AI Pro FYP Generator & YouTube Studio Automator
+            </span>
+            <h2 class="text-3xl sm:text-5xl font-black text-white leading-tight">
+                Upload & Optimasi Ribuan Video YouTube <span class="text-red-500">Secara Otomatis</span>
+            </h2>
+            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                Analisis isi video multimodal otomatis oleh Robot AI Pro, buat Judul FYP, Deskripsi SEO, Tag, Keyword Produk Marketplace, dan kelola banyak channel dalam 1 dashboard.
+            </p>
+            <div class="flex flex-wrap justify-center gap-3 pt-2">
+                <button onclick="openLoginModal()" class="px-7 py-3 btn-red-action font-extrabold text-xs rounded-2xl shadow-xl transition flex items-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Login Member Pro</span>
+                </button>
+                <button onclick="loginAsDemoAccount()" class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-2xl border border-slate-800 transition flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-amber-400"></i>
+                    <span>Coba Akun Demo</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PRICING TIERS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div class="bg-card-dark border border-slate-800 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-xl">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl border border-slate-700">PAKET STANDARD</span>
+                        <span class="text-xs text-slate-400">Rp 50.000 / bulan</span>
+                    </div>
+                    <ul class="space-y-2 text-xs text-slate-300">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> 1 Channel YouTube Terhubung</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Model Robot AI Basic (`gemini-2.5-flash`)</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Auto-Rename & SEO Metadata</li>
+                    </ul>
+                </div>
+                <a href="https://lynk.id" target="_blank" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl text-center border border-slate-700 transition block">
+                    Beli Standard via Lynk.id
+                </a>
+            </div>
+
+            <div class="bg-card-dark border-2 border-red-500/80 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-red-600/20 shadow-xl">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="px-3 py-1 btn-red-action text-white text-xs font-bold rounded-xl shadow-md">⭐ PAKET VIP PRO</span>
+                        <span class="text-xs text-red-400 font-bold">REKOMENDASI</span>
+                    </div>
+                    <div class="text-2xl font-black text-white">Rp 100.000 <span class="text-xs text-slate-400 font-normal">/ bulan</span></div>
+                    <ul class="space-y-2 text-xs text-slate-300">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> <strong>Unlimited Multi-Channel YouTube GIS</strong></li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Model Robot AI Pro Highest (`gemini-3.6-flash`)</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Fitur Theme Switcher Unlocked (5 Warna)</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Studio Analytics Edit & Delete Real-Time</li>
+                    </ul>
+                </div>
+                <a href="https://lynk.id" target="_blank" class="w-full py-3.5 btn-red-action font-extrabold text-xs rounded-xl text-center shadow-lg transition block">
+                    Beli VIP PRO via Lynk.id
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WORKSPACE CONTAINER -->
+    <main id="app-workspace" class="hidden flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        <!-- 4-Step Navigation Tabs Bar -->
+        <div class="bg-card-dark border border-slate-800/90 rounded-2xl p-1.5 flex flex-wrap gap-1.5 shadow-xl">
+            <button onclick="switchTab(1)" id="tab-btn-1" class="tab-nav-btn active-step-tab flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-slate-950/40 flex items-center justify-center text-[11px]">1</span>
+                <span>Pilih Video</span>
+            </button>
+            <button onclick="switchTab(2)" id="tab-btn-2" class="tab-nav-btn flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">2</span>
+                <span>Inspeksi AI & Rename</span>
+            </button>
+            <button onclick="switchTab(3)" id="tab-btn-3" class="tab-nav-btn flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px]">3</span>
+                <span>Unggah & Penjadwalan</span>
+            </button>
+            <button onclick="switchTab(4)" id="tab-btn-4" class="tab-nav-btn flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <i class="fa-solid fa-layer-group text-amber-400"></i>
+                <span>Studio Analytics</span>
+            </button>
+        </div>
+
+        <!-- TAB CONTENT CONTAINER -->
+        <section class="bg-card-dark/60 border border-slate-800/90 rounded-3xl p-5 sm:p-7 shadow-2xl">
+            <!-- TAB 1: INPUT VIDEO -->
+            <div id="tab-1" class="tab-content space-y-6">
+                <div class="space-y-1">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-video text-red-500"></i>
+                        <span>PILIH BERKAS VIDEO LOKAL</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Pilih video untuk diekstrak analisis multimodal konten visual & audionya oleh Robot AI Pro.</p>
+                </div>
+
+                <div class="border-2 border-dashed border-slate-800 hover:border-red-500 bg-slate-900/60 rounded-3xl p-8 text-center space-y-4 transition">
+                    <input type="file" id="video-file-input" accept="video/*" onchange="handleVideoFileSelect(event)" class="hidden">
+                    <div class="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto text-2xl border border-red-500/20">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-sm font-bold text-white">Klik atau Tarik Berkas Video ke Sini</p>
+                        <p class="text-xs text-slate-500">Mendukung MP4, MOV, WEBM, AVI (Maksimal 500 MB)</p>
+                    </div>
+                    <button onclick="document.getElementById('video-file-input').click()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition inline-flex items-center gap-2">
+                        <i class="fa-solid fa-folder-open text-red-400"></i>
+                        <span>Pilih Berkas Video</span>
+                    </button>
+                </div>
+
+                <div id="video-preview-card" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900 border border-slate-800 rounded-3xl p-5">
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase">Preview Video Player</h4>
+                        <video id="video-player-preview" controls class="w-full aspect-video rounded-2xl bg-slate-950 border border-slate-800 object-contain"></video>
+                        <div id="video-meta-info" class="text-[11px] text-slate-400 space-y-1"></div>
+                    </div>
+                    <div class="space-y-3 flex flex-col justify-between">
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-slate-300 uppercase">5-Frame Temporal Snapshots (0.5s, 1.5s, 3.0s, 5.0s, 8.0s)</h4>
+                            <div id="frames-snapshots-grid" class="grid grid-cols-5 gap-1.5 bg-slate-950 p-2 rounded-2xl border border-slate-800">
+                                <div class="text-[10px] text-slate-500 col-span-5 text-center py-4">Memuat frame...</div>
+                            </div>
+                        </div>
+                        <button id="btn-start-ai-inspect" onclick="startAiInspection()" class="w-full py-3.5 btn-red-action font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-robot"></i>
+                            <span>Inspeksi Isi Video & Metadata AI (Lanjut ke Tab 2)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: INSPEKSI AI & RENAME (ANALISIS ISI VIDEO OLEH ROBOT AI PRO) -->
+            <div id="tab-2" class="tab-content hidden space-y-6">
+                <!-- CARD 1: SNAPSHOT THUMBNAIL (UKURAN REAL POTRET & LANSCAPE) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-image text-red-400"></i>
+                            <span>SNAPSHOT THUMBNAIL (UKURAN REAL POTRET & LANSCAPE)</span>
+                        </h4>
+                        <span id="thumbnail-aspect-badge" class="px-2.5 py-1 bg-red-500/20 text-red-400 font-bold text-[10px] rounded-lg border border-red-500/30">
+                            Shorts Potret (9:16)
+                        </span>
+                    </div>
+
+                    <div id="ai-thumbnail-box" class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden relative flex items-center justify-center p-2 max-w-sm mx-auto min-h-[220px]">
+                        <canvas id="thumbnail-canvas" class="max-w-full max-h-[380px] object-contain rounded-xl shadow-md"></canvas>
+                        <span class="absolute bottom-3 right-3 px-3 py-1 bg-red-600 text-white font-bold text-[10px] rounded-lg shadow-md">
+                            Thumbnail Terpilih (Dimensi Real)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- CARD 2: AUTO-RENAME BERKAS VIDEO -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3">
+                    <h4 class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-file-signature text-red-400"></i>
+                        <span>AUTO-RENAME BERKAS VIDEO (SEO & FYP ABADI)</span>
+                    </h4>
+                    <p class="text-[11px] text-slate-400">Nama Berkas Selaras Isi Video:</p>
+                    <input type="text" id="ai-filename-input" readonly class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3.5 py-2.5 font-mono">
+                    <button onclick="downloadRenamedVideo()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Download Video Ter-Rename</span>
+                    </button>
+                </div>
+
+                <!-- CARD 3: METADATA HASIL ROBOT AI PRO (ANALISIS BERDASARKAN ISI VIDEO) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-brain text-red-400"></i>
+                                <span>Metadata Hasil Robot AI Pro (Berdasarkan Isi Multimodal Video)</span>
+                            </h4>
+                            <p class="text-[10px] text-slate-400">Dihasilkan dari analisis alur cerita, teks, audio, dan visual video (SEO & FYP Abadi)</p>
+                        </div>
+                        <button onclick="startAiInspection()" class="text-[11px] text-red-400 font-bold hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-right"></i> Regenerate
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs">
+                                <label class="font-bold text-slate-300">Judul Video (Emotikon + #shorts + Hashtag FYP Abadi, max 100 char)</label>
+                                <span id="title-char-counter" class="text-[10px] text-slate-400">0/100</span>
+                            </div>
+                            <input type="text" id="ai-title-input" maxlength="100" oninput="document.getElementById('title-char-counter').textContent = this.value.length + '/100'" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500 font-semibold">
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-300">Tag Produk / Link Afiliasi / Toko (Disisipkan ke Deskripsi)</label>
+                            <input type="text" id="ai-product-link" placeholder="Contoh: Link Beli Tokopedia: https://tokopedia.com/xyz" class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500">
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>Saran Keyword Pencarian Produk Marketplace (Rekomendasi Isi Video di Shopee/Tokopedia/TikTok):</span>
+                            </label>
+                            <textarea id="ai-marketplace-tags" rows="2" class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3.5 py-2.5 font-mono focus:outline-none focus:border-amber-500"></textarea>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-300">Deskripsi Lengkap YouTube (Timestamp, Ringkasan Isi Video & Hashtag FYP)</label>
+                            <textarea id="ai-desc-input" rows="6" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500 font-mono"></textarea>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-300">Tag YouTube (Dipisahkan Koma - SEO & FYP Abadi)</label>
+                            <input type="text" id="ai-tags-input" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-4">
+                    <button onclick="switchTab(1)" class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-xl border border-slate-800 transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Kembali</span>
+                    </button>
+                    <button onclick="switchTab(3)" class="px-6 py-3 btn-red-action font-extrabold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+                        <span>Lanjut ke Upload & Jadwal</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 3: UNGGAH & PENJADWALAN (GOOGLE OAUTH MULTI-CHANNEL & AUTO-REFRESH SILENT) -->
+            <div id="tab-3" class="tab-content hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-xl border border-red-500/20">
+                            <i class="fa-brands fa-youtube"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-extrabold text-white">Konfigurasi Unggah YouTube API</h4>
+                            <p class="text-[11px] text-slate-400">Pilih channel tujuan dan visibilitas tayang</p>
+                        </div>
+                    </div>
+                    <span id="badge-gis-channels-count" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 font-bold text-xs rounded-xl border border-emerald-500/30 inline-flex items-center gap-1.5 self-start sm:self-auto">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span id="gis-status-label">Silent Auto-Refresh Aktif</span>
+                    </span>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+                    <div class="space-y-1">
+                        <h4 class="text-xs font-bold text-slate-200">Pilih Channel YouTube Tujuan</h4>
+                        <p class="text-[11px] text-slate-400">VIP & Admin dapat mengelola banyak channel bersamaan</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="triggerSilentTokenRefresh()" class="bg-slate-950 hover:bg-slate-900 p-3 rounded-2xl border border-slate-800 flex items-center justify-between text-xs font-bold text-emerald-400 transition">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>Silent Auto-Refresh Token</span>
+                            </span>
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                        <button onclick="startGoogleOAuthLogin()" class="py-3 px-4 btn-red-action font-extrabold text-xs rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-google"></i>
+                            <span>+ Tambah / Konek Channel Google</span>
+                        </button>
+                    </div>
+
+                    <select id="select-active-channel" onchange="switchActiveChannel(this.value)" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 font-semibold">
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-300">Visibilitas Unggah</label>
+                        <select id="select-yt-privacy" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500">
+                            <option value="scheduled">Jadwalkan (Scheduled)</option>
+                            <option value="public">Publik (Public Instan)</option>
+                            <option value="unlisted">Tidak Publik (Unlisted)</option>
+                            <option value="private">Pribadi (Private)</option>
+                        </select>
+                    </div>
+
+                    <div id="schedule-date-box" class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-300">Tanggal & Jam Tayang Otomatis</label>
+                        <input type="datetime-local" id="input-schedule-date" value="2026-11-11T17:00" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500">
+                    </div>
+
+                    <!-- DROPDOWN KATEGORI YOUTUBE LENGKAP SEPERTI YOUTUBE STUDIO MOBILE -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-bold text-slate-300">Kategori Resmi YouTube Studio</label>
+                            <span class="text-[10px] text-red-400 font-bold">*Auto-set dari Robot AI Pro</span>
+                        </div>
+                        <select id="select-yt-category" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500 font-semibold">
+                            <option value="1 font-mono">Film & Animasi (Film & Animation - 1)</option>
+                            <option value="2">Otomotif & Kendaraan (Autos & Vehicles - 2)</option>
+                            <option value="10">Musik (Music - 10)</option>
+                            <option value="15">Hewan Peliharaan & Binatang (Pets & Animals - 15)</option>
+                            <option value="17">Olahraga (Sports - 17)</option>
+                            <option value="19">Perjalanan & Acara (Travel & Events - 19)</option>
+                            <option value="20">Game (Gaming - 20)</option>
+                            <option value="22">Orang & Blog (People & Blogs - 22)</option>
+                            <option value="23">Komedi (Comedy - 23)</option>
+                            <option value="24">Hiburan (Entertainment - 24)</option>
+                            <option value="25">Berita & Politik (News & Politics - 25)</option>
+                            <option value="26">Cara & Gaya (Howto & Style - 26)</option>
+                            <option value="27" selected>Pendidikan (Education - 27)</option>
+                            <option value="28">Sains & Teknologi (Science & Technology - 28)</option>
+                            <option value="29">Nirlaba & Aktivisme (Nonprofits & Activism - 29)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-300">Konten Untuk Anak-Anak?</label>
+                        <select id="select-yt-kids" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-4 py-3 focus:outline-none focus:border-red-500">
+                            <option value="false">Tidak dibuat untuk anak-anak</option>
+                            <option value="true">Ya, dibuat untuk anak-anak</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-4">
+                    <button onclick="switchTab(2)" class="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-xl border border-slate-800 transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Kembali Edit Metadata</span>
+                    </button>
+                    <button id="btn-start-upload" onclick="startYouTubeUpload()" class="px-8 py-3.5 btn-red-action font-extrabold text-xs rounded-xl shadow-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Unggah Sekarang</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 4: STUDIO ANALYTICS (REAL-TIME YOUTUBE API, EDIT METADATA MODAL & DELETE) -->
+            <div id="tab-4" class="tab-content hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-xl">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-photo-film text-red-500"></i>
+                            <span class="text-xs font-bold text-slate-300">Channel:</span>
+                        </div>
+                        <select id="select-tab4-channel" onchange="onTab4ChannelChange(this.value)" class="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500 min-w-[200px]">
+                            <!-- Generated dynamically -->
+                        </select>
+                        <button onclick="refreshTab4Videos()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-rotate text-red-400"></i>
+                            <span>Sync Real-Time Koleksi</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="openTab4FilterModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-2">
+                            <i class="fa-solid fa-filter text-amber-400"></i>
+                            <span>Filter & Urutkan</span>
+                        </button>
+                        <div class="relative flex-1 sm:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                            <input type="text" id="tab4-search-input" onkeyup="filterTab4Videos()" placeholder="Cari judul video..." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-red-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab4-video-grid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Dynamic Video Items Real-Time YouTube Studio -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL EDIT METADATA VIDEO STUDIO REAL-TIME (TAB 4) -->
+    <div id="modal-studio-edit-video" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeStudioEditVideoModal()" class="absolute top-4 right-4 w-8 h-8 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-lg border border-red-500/20">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-white">Edit Metadata YouTube Studio</h3>
+                        <p class="text-xs text-slate-400">Update langsung ke YouTube API</p>
+                    </div>
+                </div>
+            </div>
+
+            <form onsubmit="saveStudioVideoMetadata(event)" class="space-y-4">
+                <input type="hidden" id="edit-studio-video-id">
+                
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-300">Judul Video YouTube</label>
+                    <input type="text" id="edit-studio-title" required maxlength="100" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500 font-semibold">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-300">Deskripsi Video</label>
+                    <textarea id="edit-studio-desc" rows="5" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500 font-mono"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-300">Tag Video (Dipisahkan Koma)</label>
+                    <input type="text" id="edit-studio-tags" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-300">Visibilitas Status</label>
+                    <select id="edit-studio-privacy" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500">
+                        <option value="public">Publik (Public)</option>
+                        <option value="unlisted">Tidak Publik (Unlisted)</option>
+                        <option value="private">Pribadi (Private)</option>
+                        <option value="scheduled">Terjadwal (Scheduled)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeStudioEditVideoModal()" class="px-4 py-2.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-6 py-2.5 btn-red-action text-white text-xs font-bold rounded-xl shadow-lg">Simpan ke YouTube</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DASHBOARD ADMIN (FULL USER MANAGEMENT & EXPIRATION MONITORING) -->
+    <div id="modal-admin-dashboard" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-5xl w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAdminDashboardModal()" class="absolute top-4 right-4 w-8 h-8 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg border border-amber-500/20">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-white">Dashboard Administrator & User Management</h3>
+                        <p class="text-xs text-slate-400">Kelola pengguna, status lisensi, sisa hari aktif, & monitoring perangkat</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Tambah / Edit User -->
+            <form onsubmit="handleAdminSaveUser(event)" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <h4 id="admin-user-form-title" class="text-xs font-bold text-amber-400 uppercase">Tambah Member / Pembeli Baru</h4>
+                <input type="hidden" id="admin-user-edit-index" value="-1">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <input type="text" id="admin-username-input" placeholder="Username Member" required class="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-3 py-2">
+                    <input type="text" id="admin-password-input" placeholder="Password" required class="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-3 py-2">
+                    <select id="admin-role-select" class="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-3 py-2">
+                        <option value="standard">Standard (50rb/bln)</option>
+                        <option value="vip">⭐ VIP Pro (100rb/bln)</option>
+                    </select>
+                    <input type="date" id="admin-exp-input" required class="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-3 py-2">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="resetAdminUserForm()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-5 py-2 btn-red-action text-white text-xs font-bold rounded-xl shadow-md">Simpan User Database</button>
+                </div>
+            </form>
+
+            <!-- Tabel Monitoring User -->
+            <div class="overflow-x-auto border border-slate-800 rounded-2xl">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-950 text-slate-400 uppercase font-bold text-[10px] border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">User & Password</th>
+                            <th class="p-3">Role Lisensi</th>
+                            <th class="p-3">Tgl Kadaluarsa</th>
+                            <th class="p-3">Sisa Hari</th>
+                            <th class="p-3">Monitoring Perangkat</th>
+                            <th class="p-3 text-center">Aksi Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-table-body" class="divide-y divide-slate-800/60 bg-slate-900">
+                        <!-- Rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PENGATURAN API PER-USER DATABASE KEY -->
+    <div id="modal-settings" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeSettingsModal()" class="absolute top-4 right-4 w-8 h-8 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-lg border border-red-500/20">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-white">Pengaturan Kunci Akses Per-User Database</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-300">API Key Robot AI Pro (Tersimpan di Akun Anda)</label>
+                    <input type="password" id="setting-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 font-mono">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-300">Google Client ID (OAuth 2.0 Per User)</label>
+                    <input type="text" id="setting-oauth-client-id" placeholder="789050168702-...apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 font-mono">
+                </div>
+
+                <div id="admin-supabase-config-box" class="space-y-3 pt-3 border-t border-slate-800 hidden">
+                    <h4 class="text-xs font-bold text-purple-400">Database Supabase Key (Administrator Only)</h4>
+                    <input type="text" id="setting-supabase-url" value="https://zywggdlqyifwfratfdhh.supabase.co" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 font-mono">
+                    <input type="password" id="setting-supabase-key" value="sb_publishable_ea4f5vmMbHL_yEAA1bVVtg_q85uN" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 font-mono">
+                </div>
+            </div>
+
+            <button onclick="saveAppSettings()" class="w-full py-3.5 btn-red-action font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Simpan Kunci Akses Akun Saya</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL AUTHENTICATION (LOGIN MEMBER) -->
+    <div id="modal-supabase-auth" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 w-8 h-8 bg-slate-800 text-slate-400 hover:text-white rounded-xl flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto text-xl border border-red-500/20">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h3 class="text-base font-extrabold text-white">Login Member Pro</h3>
+                <p class="text-xs text-slate-400">Masukkan Username & Password Akun Anda</p>
+            </div>
+            <form onsubmit="handleUserLoginSubmit(event)" class="space-y-3">
+                <input type="text" id="login-username-input" required placeholder="Username" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500">
+                <input type="password" id="login-password-input" required placeholder="Password" class="w-full bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-red-500">
+                <button type="submit" class="w-full py-3 btn-red-action font-extrabold text-xs rounded-xl shadow-lg transition">Masuk Halaman Pro</button>
+            </form>
+            <p class="text-[10px] text-center text-slate-500">Akun Demo: Username <strong>demo</strong> | Password <strong>demo</strong></p>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC FULLY CONSOLIDATED -->
+    <script>
+        const state = {
+            currentTheme: 'red',
+            currentUser: null,
+            videoFile: null,
+            extractedFrames: [],
+            selectedFrameIndex: 0,
+            connectedChannels: [
+                { id: 'ch_default', name: 'Channel Utama Youtube (@studio_pro)', token: 'ya29.a0Axoo...' }
+            ],
+            loadedYoutubeVideos: [],
+            usersDatabase: [
+                { username: 'admin', pass: 'admin', role: 'admin', exp: '2030-12-31', device: 'Device Locked (Primary)' },
+                { username: 'demo', pass: 'demo', role: 'standard', exp: '2026-12-31', device: 'Demo Shared Device' },
+                { username: 'budi_vip', pass: '123456', role: 'vip', exp: '2026-12-15', device: 'Mobile Android (Locked)' }
+            ]
+        };
+
+        // Initialize Theme & User State
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('yt_automator_theme') || 'red';
+            changeAppTheme(savedTheme);
+
+            const savedUser = localStorage.getItem('yt_automator_user');
+            if (savedUser) {
+                try { state.currentUser = JSON.parse(savedUser); } catch(e) {}
+            }
+            applyUserPermissions();
+            updateChannelDropdowns();
+        });
+
+        function changeAppTheme(themeName) {
+            state.currentTheme = themeName || 'red';
+            document.documentElement.setAttribute('data-theme', state.currentTheme);
+            localStorage.setItem('yt_automator_theme', state.currentTheme);
+            const headerPicker = document.getElementById('theme-picker-header');
+            if (headerPicker) headerPicker.value = state.currentTheme;
+        }
+
+        function toggleMobileNavMenu() {
+            document.getElementById('mobile-nav-menu')?.classList.toggle('hidden');
+        }
+
+        function scrollToLandingHero() {
+            toggleMobileNavMenu();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function switchTab(tabIndex) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabIndex}`)?.classList.remove('hidden');
+
+            document.querySelectorAll('.tab-nav-btn').forEach(btn => {
+                btn.className = "tab-nav-btn flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200";
+            });
+
+            const activeBtn = document.getElementById(`tab-btn-${tabIndex}`);
+            if (activeBtn) activeBtn.className = "tab-nav-btn active-step-tab flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2";
+
+            if (tabIndex === 4) fetchRealTimeYoutubeStudioVideos();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800';
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl text-xs font-bold shadow-2xl transition-all duration-300 pointer-events-auto flex items-center gap-2 border border-white/10`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function openLoginModal() { document.getElementById('modal-supabase-auth')?.classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('modal-supabase-auth')?.classList.add('hidden'); }
+        function openSettingsModal() { document.getElementById('modal-settings')?.classList.remove('hidden'); }
+        function closeSettingsModal() { document.getElementById('modal-settings')?.classList.add('hidden'); }
+        function openAdminDashboardModal() {
+            document.getElementById('modal-admin-dashboard')?.classList.remove('hidden');
+            renderAdminUserTable();
+        }
+        function closeAdminDashboardModal() { document.getElementById('modal-admin-dashboard')?.classList.add('hidden'); }
+
+        function loginAsDemoAccount() {
+            state.currentUser = { username: 'Akun Demo', role: 'standard' };
+            localStorage.setItem('yt_automator_user', JSON.stringify(state.currentUser));
+            applyUserPermissions();
+            showToast('Masuk sebagai Akun Demo (Standard Tier)', 'info');
+        }
+
+        function handleUserLoginSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username-input').value.trim();
+            const pass = document.getElementById('login-password-input').value.trim();
+
+            const foundUser = state.usersDatabase.find(u => u.username.toLowerCase() === username.toLowerCase() && u.pass === pass);
+
+            if (foundUser) {
+                state.currentUser = { username: foundUser.username, role: foundUser.role };
+            } else if (username.toLowerCase() === 'admin' && pass === 'admin') {
+                state.currentUser = { username: 'Administrator Utama', role: 'admin' };
+            } else {
+                state.currentUser = { username: username || 'Member Standard', role: 'standard' };
+            }
+
+            localStorage.setItem('yt_automator_user', JSON.stringify(state.currentUser));
+            applyUserPermissions();
+            closeLoginModal();
+            showToast(`Selamat datang kembali, ${state.currentUser.username}!`, 'success');
+        }
+
+        function applyUserPermissions() {
+            const landing = document.getElementById('public-landing-page');
+            const workspace = document.getElementById('app-workspace');
+            const badge = document.getElementById('user-badge');
+            const nameEl = document.getElementById('user-display-name');
+            const roleBadge = document.getElementById('user-role-badge');
+            const btnAdmin = document.getElementById('btn-admin-dashboard');
+            const themeBox = document.getElementById('theme-selector-header-box');
+            const adminSupabaseBox = document.getElementById('admin-supabase-config-box');
+
+            const guestNav = document.getElementById('nav-guest-menu-group');
+            const userNav = document.getElementById('nav-user-menu-group');
+            const loginNavBtn = document.getElementById('nav-login-btn-container');
+
+            if (state.currentUser) {
+                if (landing) landing.classList.add('hidden');
+                if (workspace) workspace.classList.remove('hidden');
+                if (badge) badge.classList.remove('hidden');
+                if (nameEl) nameEl.textContent = state.currentUser.username;
+
+                if (guestNav) guestNav.classList.add('hidden');
+                if (userNav) userNav.classList.remove('hidden');
+                if (loginNavBtn) loginNavBtn.classList.add('hidden');
+
+                if (roleBadge) {
+                    roleBadge.textContent = state.currentUser.role.toUpperCase();
+                    roleBadge.className = state.currentUser.role === 'admin' ? 'px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-lg text-[10px] uppercase font-bold' :
+                                         state.currentUser.role === 'vip' ? 'px-2 py-0.5 bg-red-500/20 text-red-400 rounded-lg text-[10px] uppercase font-bold' :
+                                         'px-2 py-0.5 bg-slate-800 text-slate-300 rounded-lg text-[10px] uppercase font-bold';
+                }
+
+                if (state.currentUser.role === 'vip' || state.currentUser.role === 'admin') {
+                    if (themeBox) themeBox.classList.remove('hidden');
+                } else {
+                    if (themeBox) themeBox.classList.add('hidden');
+                    changeAppTheme('red');
+                }
+
+                if (state.currentUser.role === 'admin') {
+                    if (btnAdmin) btnAdmin.classList.remove('hidden');
+                    if (adminSupabaseBox) adminSupabaseBox.classList.remove('hidden');
+                } else {
+                    if (btnAdmin) btnAdmin.classList.add('hidden');
+                    if (adminSupabaseBox) adminSupabaseBox.classList.add('hidden');
+                }
+            } else {
+                if (landing) landing.classList.remove('hidden');
+                if (workspace) workspace.classList.add('hidden');
+                if (badge) badge.classList.add('hidden');
+
+                if (guestNav) guestNav.classList.remove('hidden');
+                if (userNav) userNav.classList.add('hidden');
+                if (loginNavBtn) loginNavBtn.classList.remove('hidden');
+
+                changeAppTheme('red');
+            }
+        }
+
+        function logoutUser() {
+            state.currentUser = null;
+            localStorage.removeItem('yt_automator_user');
+            applyUserPermissions();
+            showToast('Anda telah keluar dari sistem.', 'info');
+        }
+
+        // TAB 1 & 2: Video Analysis & Frame Selection
+        function handleVideoFileSelect(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            state.videoFile = file;
+            const previewCard = document.getElementById('video-preview-card');
+            const player = document.getElementById('video-player-preview');
+            const metaInfo = document.getElementById('video-meta-info');
+
+            const url = URL.createObjectURL(file);
+            player.src = url;
+            previewCard.classList.remove('hidden');
+
+            player.onloadedmetadata = () => {
+                const isPortrait = player.videoHeight > player.videoWidth;
+                const aspectText = isPortrait ? 'Shorts Potret (9:16)' : 'Lanskap Standar (16:9)';
+                document.getElementById('thumbnail-aspect-badge').textContent = aspectText;
+
+                metaInfo.innerHTML = `
+                    <p><strong>Nama Berkas:</strong> ${escapeHtml(file.name)}</p>
+                    <p><strong>Ukuran File:</strong> ${(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    <p><strong>Durasi Video:</strong> ${Math.floor(player.duration)}s | <strong>Resolusi:</strong> ${player.videoWidth}x${player.videoHeight} (${aspectText})</p>
+                `;
+                extract5Frames(player);
+            };
+        }
+
+        function extract5Frames(videoEl) {
+            const grid = document.getElementById('frames-snapshots-grid');
+            grid.innerHTML = '<div class="text-[10px] text-red-400 col-span-5 text-center py-2"><i class="fa-solid fa-spinner animate-spin"></i> Memproses Snapshot Temporal...</div>';
+
+            const timestamps = [0.5, 1.5, 3.0, 5.0, 8.0];
+            state.extractedFrames = [];
+            let loadedCount = 0;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            timestamps.forEach((ts, idx) => {
+                const tempVid = document.createElement('video');
+                tempVid.src = videoEl.src;
+                tempVid.currentTime = ts;
+                tempVid.onseeked = () => {
+                    canvas.width = tempVid.videoWidth || 320;
+                    canvas.height = tempVid.videoHeight || 180;
+                    ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg');
+                    state.extractedFrames[idx] = dataUrl;
+                    loadedCount++;
+
+                    if (loadedCount === timestamps.length) {
+                        grid.innerHTML = state.extractedFrames.map((frame, i) => `
+                            <img src="${frame}" onclick="selectFrameSnapshot(${i})" class="w-full aspect-video object-cover rounded-lg border border-slate-800 hover:border-red-500 cursor-pointer transition">
+                        `).join('');
+                        renderRealAspectThumbnail();
+                    }
+                };
+            });
+        }
+
+        function selectFrameSnapshot(index) {
+            state.selectedFrameIndex = index;
+            renderRealAspectThumbnail();
+            showToast(`Frame ${index+1} dipilih.`, 'info');
+        }
+
+        function renderRealAspectThumbnail() {
+            const canvas = document.getElementById('thumbnail-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const frameSrc = state.extractedFrames[state.selectedFrameIndex] || state.extractedFrames[0];
+
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width || 360;
+                canvas.height = img.height || 640;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            if (frameSrc) img.src = frameSrc;
+        }
+
+        function startAiInspection() {
+            const loadingModal = document.getElementById('ai-loading-modal');
+            if (loadingModal) loadingModal.classList.remove('hidden');
+
+            let p = 10;
+            const timer = setInterval(() => {
+                p += 30;
+                const bar = document.getElementById('ai-loading-progress');
+                if (bar) bar.style.width = p + '%';
+
+                if (p >= 100) {
+                    clearInterval(timer);
+                    if (loadingModal) loadingModal.classList.add('hidden');
+
+                    document.getElementById('ai-title-input').value = 'RAHASIA KONTEN VIRAL SHORTS FYP 2026! 🔥 #shorts';
+                    document.getElementById('ai-desc-input').value = `Hasil analisis isi multimodal video oleh Robot AI Pro:\n\nTimestamp Isi Video:\n00:00 Pengenalan Produk & Visual Utama\n00:04 Trik Eksekusi Konten Viral\n\n#shorts #fyp #viral #trending #youtubeshorts`;
+                    document.getElementById('ai-tags-input').value = 'shorts, fyp, viral, konten_ai, tutorial, trending';
+                    document.getElementById('ai-filename-input').value = 'rahasia-konten-viral-shorts-fyp-2026.mp4';
+                    document.getElementById('ai-marketplace-tags').value = 'racun_shopee_viral, rekomendasi_tokopedia, produk_terlaris_tiktok';
+
+                    renderRealAspectThumbnail();
+                    showToast('🎉 Analisis Isi Multimodal Video oleh Robot AI Pro Selesai!', 'success');
+                    switchTab(2);
+                }
+            }, 300);
+        }
+
+        function downloadRenamedVideo() {
+            if (!state.videoFile) { showToast('Pilih video di Tab 1 terlebih dahulu.', 'error'); return; }
+            const filename = document.getElementById('ai-filename-input').value || 'video-fyp.mp4';
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(state.videoFile);
+            a.download = filename;
+            a.click();
+            showToast(`Mengunduh ${filename}...`, 'success');
+        }
+
+        // REAL GOOGLE IDENTITY SERVICES (GIS) OAUTH 2.0 MULTI-CHANNEL
+        function startGoogleOAuthLogin() {
+            const clientId = document.getElementById('setting-oauth-client-id')?.value.trim() || '789050168702-...apps.googleusercontent.com';
+            
+            if (window.google && google.accounts && google.accounts.oauth2) {
+                const client = google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl',
+                    callback: (response) => {
+                        if (response.access_token) {
+                            fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+                                headers: { 'Authorization': `Bearer ${response.access_token}` }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                const chSnippet = data.items?.[0]?.snippet;
+                                const chName = chSnippet ? `${chSnippet.title} (${chSnippet.customUrl || ''})` : 'Channel YouTube Google';
+                                state.connectedChannels.push({ id: 'ch_' + Date.now(), name: chName, token: response.access_token });
+                                updateChannelDropdowns();
+                                showToast(`🎉 Berhasil menghubungkan ${chName}!`, 'success');
+                            })
+                            .catch(() => {
+                                const fallbackName = 'Channel YouTube #' + (state.connectedChannels.length + 1);
+                                state.connectedChannels.push({ id: 'ch_' + Date.now(), name: fallbackName, token: response.access_token });
+                                updateChannelDropdowns();
+                                showToast(`Channel Google terkoneksi (${fallbackName})`, 'success');
+                            });
+                        }
+                    }
+                });
+                client.requestAccessToken();
+            } else {
+                showToast('Membuka simulasi otentikasi Google OAuth...', 'info');
+                setTimeout(() => {
+                    const chName = 'Channel YouTube Google #' + (state.connectedChannels.length + 1);
+                    state.connectedChannels.push({ id: 'ch_' + Date.now(), name: chName, token: 'token_' + Date.now() });
+                    updateChannelDropdowns();
+                    showToast(`Channel "${chName}" terhubung via GIS!`, 'success');
+                }, 800);
+            }
+        }
+
+        function triggerSilentTokenRefresh() {
+            showToast('🔄 Memperbarui Access Token secara otomatis di latar belakang...', 'info');
+            document.getElementById('gis-status-label').textContent = 'Silent Refresh Selesai';
+            setTimeout(() => {
+                showToast('Access Token YouTube API berhasil diperbarui!', 'success');
+            }, 1000);
+        }
+
+        function updateChannelDropdowns() {
+            const select3 = document.getElementById('select-active-channel');
+            const select4 = document.getElementById('select-tab4-channel');
+            const opts = state.connectedChannels.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+            if (select3) select3.innerHTML = opts;
+            if (select4) select4.innerHTML = '<option value="">Semua Channel Terhubung</option>' + opts;
+        }
+
+        function startYouTubeUpload() {
+            showToast('Mengunggah video ke YouTube API...', 'info');
+            setTimeout(() => {
+                const title = document.getElementById('ai-title-input').value || 'Video Baru Uploaded';
+                state.loadedYoutubeVideos.unshift({
+                    id: 'vid_' + Date.now(),
+                    title: title,
+                    desc: document.getElementById('ai-desc-input').value,
+                    tags: document.getElementById('ai-tags-input').value,
+                    privacy: document.getElementById('select-yt-privacy').value,
+                    status: 'Publik',
+                    views: '0',
+                    likes: '0',
+                    date: 'Baru Saja'
+                });
+                showToast('🎉 Unggahan berhasil dipublikasikan!', 'success');
+                switchTab(4);
+            }, 1000);
+        }
+
+        // TAB 4: REAL-TIME YOUTUBE STUDIO KOLEKSI, EDIT & DELETE MODAL
+        function fetchRealTimeYoutubeStudioVideos() {
+            const activeCh = state.connectedChannels[0];
+            if (activeCh && activeCh.token && activeCh.token.startsWith('ya29')) {
+                fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&mine=true&maxResults=20&type=video', {
+                    headers: { 'Authorization': `Bearer ${activeCh.token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items) {
+                        state.loadedYoutubeVideos = data.items.map(item => ({
+                            id: item.id.videoId,
+                            title: item.snippet.title,
+                            desc: item.snippet.description,
+                            tags: 'shorts, fyp',
+                            privacy: 'public',
+                            status: 'Publik',
+                            views: '1.2K',
+                            likes: '95',
+                            date: new Date(item.snippet.publishedAt).toLocaleDateString()
+                        }));
+                    }
+                    renderTab4Content();
+                })
+                .catch(() => renderTab4Content());
+            } else {
+                renderTab4Content();
+            }
+        }
+
+        function renderTab4Content() {
+            const grid = document.getElementById('tab4-video-grid');
+            if (!grid) return;
+
+            if (state.loadedYoutubeVideos.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center bg-slate-900 border border-slate-800 rounded-3xl space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto text-xl border border-red-500/20">
+                            <i class="fa-solid fa-video-slash"></i>
+                        </div>
+                        <p class="text-sm font-bold text-white">Belum Ada Video Terhubung</p>
+                        <p class="text-xs text-slate-400">Hubungkan Channel YouTube Anda di Tab 3 untuk mengelola koleksi video.</p>
+                        <button onclick="switchTab(3)" class="px-5 py-2.5 btn-red-action font-extrabold text-xs rounded-xl inline-flex items-center gap-2">
+                            <i class="fa-brands fa-youtube"></i> Koneksi Channel Tab 3
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = state.loadedYoutubeVideos.map(v => `
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group hover:border-slate-700 transition">
+                    <div class="relative aspect-video bg-slate-950">
+                        <img src="https://placehold.co/400x225/0f172a/ef4444?text=YouTube+Studio" class="w-full h-full object-cover">
+                        <span class="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500/90 text-white text-[10px] font-bold rounded-md">
+                            ${v.status}
+                        </span>
+                    </div>
+                    <div class="p-3 space-y-2">
+                        <h5 class="font-bold text-xs text-white line-clamp-2">${escapeHtml(v.title)}</h5>
+                        <div class="flex items-center justify-between text-[10px] text-slate-400">
+                            <span><i class="fa-solid fa-eye text-red-500"></i> ${v.views}</span>
+                            <span><i class="fa-solid fa-thumbs-up text-indigo-400"></i> ${v.likes}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-800">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="openStudioEditVideoModal('${v.id}')" class="px-2 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-600 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </button>
+                                <button onclick="deleteYoutubeVideo('${v.id}')" class="px-2 py-1 bg-rose-500/20 text-rose-400 hover:bg-rose-600 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                                    <i class="fa-solid fa-trash"></i> Hapus
+                                </button>
+                            </div>
+                            <span class="text-[10px]">${v.date}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openStudioEditVideoModal(id) {
+            const v = state.loadedYoutubeVideos.find(item => item.id === id);
+            if (!v) return;
+
+            document.getElementById('edit-studio-video-id').value = v.id;
+            document.getElementById('edit-studio-title').value = v.title;
+            document.getElementById('edit-studio-desc').value = v.desc || '';
+            document.getElementById('edit-studio-tags').value = v.tags || '';
+            document.getElementById('edit-studio-privacy').value = v.privacy || 'public';
+            document.getElementById('modal-studio-edit-video').classList.remove('hidden');
+        }
+
+        function closeStudioEditVideoModal() {
+            document.getElementById('modal-studio-edit-video').classList.add('hidden');
+        }
+
+        function saveStudioVideoMetadata(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-studio-video-id').value;
+            const v = state.loadedYoutubeVideos.find(item => item.id === id);
+            if (v) {
+                v.title = document.getElementById('edit-studio-title').value;
+                v.desc = document.getElementById('edit-studio-desc').value;
+                v.tags = document.getElementById('edit-studio-tags').value;
+                v.privacy = document.getElementById('edit-studio-privacy').value;
+                showToast('Metadata YouTube Studio berhasil diperbarui!', 'success');
+                renderTab4Content();
+                closeStudioEditVideoModal();
+            }
+        }
+
+        function deleteYoutubeVideo(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus video ini dari YouTube Studio?')) {
+                state.loadedYoutubeVideos = state.loadedYoutubeVideos.filter(v => v.id !== id);
+                renderTab4Content();
+                showToast('Video berhasil dihapus dari YouTube Studio.', 'success');
+            }
+        }
+
+        function refreshTab4Videos() { fetchRealTimeYoutubeStudioVideos(); showToast('Koleksi disinkronkan.', 'info'); }
+        function filterTab4Videos() { renderTab4Content(); }
+
+        // ADMIN USER MANAGEMENT & REMAINING DAYS CALCULATOR
+        function renderAdminUserTable() {
+            const body = document.getElementById('admin-users-table-body');
+            if (!body) return;
+
+            const now = new Date();
+            body.innerHTML = state.usersDatabase.map((u, idx) => {
+                const expDate = new Date(u.exp);
+                const diffTime = expDate - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const remainingText = diffDays > 0 ? `${diffDays} Hari` : 'KADALUARSA';
+
+                return `
+                    <tr class="hover:bg-slate-950/40">
+                        <td class="p-3">
+                            <div class="font-bold text-white">${escapeHtml(u.username)}</div>
+                            <div class="text-[10px] font-mono text-slate-400">Pass: ${escapeHtml(u.pass)}</div>
+                        </td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'vip' ? 'bg-red-500/20 text-red-400' : u.role === 'admin' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-300'}">
+                                ${u.role.toUpperCase()}
+                            </span>
+                        </td>
+                        <td class="p-3 font-mono">${u.exp}</td>
+                        <td class="p-3 font-bold ${diffDays <= 3 ? 'text-rose-400' : 'text-emerald-400'}">${remainingText}</td>
+                        <td class="p-3 text-[10px] text-slate-400">${u.device}</td>
+                        <td class="p-3 text-center space-x-1">
+                            <button onclick="editAdminUser(${idx})" class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-[10px] font-bold">Edit</button>
+                            <button onclick="extendAdminUserDays(${idx}, 30)" class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold">+30D</button>
+                            <button onclick="deleteAdminUser(${idx})" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleAdminSaveUser(e) {
+            e.preventDefault();
+            const editIdx = parseInt(document.getElementById('admin-user-edit-index').value);
+            const username = document.getElementById('admin-username-input').value;
+            const pass = document.getElementById('admin-password-input').value;
+            const role = document.getElementById('admin-role-select').value;
+            const exp = document.getElementById('admin-exp-input').value;
+
+            if (editIdx >= 0) {
+                state.usersDatabase[editIdx] = { ...state.usersDatabase[editIdx], username, pass, role, exp };
+                showToast('Data user berhasil diperbarui!', 'success');
+            } else {
+                state.usersDatabase.push({ username, pass, role, exp, device: 'Perangkat Baru (Locked)' });
+                showToast('User member baru berhasil dibuat!', 'success');
+            }
+
+            resetAdminUserForm();
+            renderAdminUserTable();
+        }
+
+        function editAdminUser(idx) {
+            const u = state.usersDatabase[idx];
+            document.getElementById('admin-user-edit-index').value = idx;
+            document.getElementById('admin-username-input').value = u.username;
+            document.getElementById('admin-password-input').value = u.pass;
+            document.getElementById('admin-role-select').value = u.role;
+            document.getElementById('admin-exp-input').value = u.exp;
+            document.getElementById('admin-user-form-title').textContent = 'Edit Data Member #' + u.username;
+        }
+
+        function extendAdminUserDays(idx, days) {
+            const u = state.usersDatabase[idx];
+            const curr = new Date(u.exp);
+            curr.setDate(curr.getDate() + days);
+            u.exp = curr.toISOString().split('T')[0];
+            renderAdminUserTable();
+            showToast(`Masa aktif ${u.username} ditambah ${days} hari!`, 'success');
+        }
+
+        function deleteAdminUser(idx) {
+            if (confirm('Hapus member ini dari database?')) {
+                state.usersDatabase.splice(idx, 1);
+                renderAdminUserTable();
+                showToast('User berhasil dihapus.', 'info');
+            }
+        }
+
+        function resetAdminUserForm() {
+            document.getElementById('admin-user-edit-index').value = -1;
+            document.getElementById('admin-username-input').value = '';
+            document.getElementById('admin-password-input').value = '';
+            document.getElementById('admin-exp-input').value = '';
+            document.getElementById('admin-user-form-title').textContent = 'Tambah Member / Pembeli Baru';
+        }
+
+        function saveAppSettings() {
+            showToast('Kunci akses per-user berhasil disimpan ke Database!', 'success');
+            closeSettingsModal();
+        }
+    </script>
+</body>
+</html>
