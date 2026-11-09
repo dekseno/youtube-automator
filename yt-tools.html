@@ -888,6 +888,12 @@
 
     <!-- MAIN CLIENT JAVASCRIPT LOGIC -->
     <script>
+        // Konfigurasi Default Supabase Admin (Fallback Global untuk semua User)
+        const DEFAULT_SUPABASE_CONFIG = {
+            url: 'https://fpaoygtevxilcrmsuzuk.supabase.co', // Ganti dengan Supabase URL Admin jika diperlukan
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' // Ganti dengan Supabase Anon Key Admin jika diperlukan
+        };
+
         const elements = {};
         const state = {
             geminiApiKey: '',
@@ -943,8 +949,10 @@
             state.geminiApiKey = localStorage.getItem('yt_automator_gemini_key') || '';
             state.oauthClientId = localStorage.getItem('yt_automator_oauth_client_id') || '';
             state.selectedGeminiModel = localStorage.getItem('yt_automator_gemini_model') || 'gemini-3.6-flash';
-            state.supabaseUrl = localStorage.getItem('yt_automator_supabase_url') || '';
-            state.supabaseKey = localStorage.getItem('yt_automator_supabase_key') || '';
+            
+            // Gunakan settingan tersimpan, atau jatuh ke Default Admin Global
+            state.supabaseUrl = localStorage.getItem('yt_automator_supabase_url') || DEFAULT_SUPABASE_CONFIG.url;
+            state.supabaseKey = localStorage.getItem('yt_automator_supabase_key') || DEFAULT_SUPABASE_CONFIG.key;
 
             if (elements.inputGeminiKey) elements.inputGeminiKey.value = state.geminiApiKey;
             if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = state.oauthClientId;
@@ -1028,8 +1036,9 @@
             const currentDeviceId = getOrCreateDeviceId();
 
             try {
-                const url = state.supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
-                const key = state.supabaseKey || localStorage.getItem('yt_automator_supabase_key');
+                // Selalu fallback ke default settingan admin jika belum dikonfigurasi di client
+                const url = state.supabaseUrl || localStorage.getItem('yt_automator_supabase_url') || DEFAULT_SUPABASE_CONFIG.url;
+                const key = state.supabaseKey || localStorage.getItem('yt_automator_supabase_key') || DEFAULT_SUPABASE_CONFIG.key;
 
                 if (!url || !key || !window.supabase) {
                     showToast('Pengaturan Supabase URL & Key belum dikonfigurasi di Pengaturan API!', 'error');
@@ -1776,8 +1785,8 @@
             const totalSpan = document.getElementById('admin-total-users');
             if (!tbody) return;
 
-            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url');
-            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key');
+            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url') || DEFAULT_SUPABASE_CONFIG.url;
+            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key') || DEFAULT_SUPABASE_CONFIG.key;
 
             if (!url || !key || !window.supabase) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-amber-400 font-medium">⚠️ Konfigurasi URL & Anon Key Supabase di Pengaturan API wajib diisi & disimpan terlebih dahulu!</td></tr>`;
@@ -1968,8 +1977,8 @@
         }
 
         async function testSupabaseConnection() {
-            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url');
-            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key');
+            const url = elements.inputSupabaseUrl?.value.trim() || localStorage.getItem('yt_automator_supabase_url') || DEFAULT_SUPABASE_CONFIG.url;
+            const key = elements.inputSupabaseKey?.value.trim() || localStorage.getItem('yt_automator_supabase_key') || DEFAULT_SUPABASE_CONFIG.key;
 
             if (!url || !key) {
                 showToast('Isi Supabase URL dan Key terlebih dahulu!', 'error');
