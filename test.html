@@ -1723,11 +1723,29 @@
                                 }
                             }
 
+                            // Muat Kunci API & Konfigurasi Spesifik User dari Supabase
+                            if (matchedUser.gemini_api_key) {
+                                localStorage.setItem('yt_automator_gemini_key', matchedUser.gemini_api_key);
+                                if (elements.inputGeminiKey) elements.inputGeminiKey.value = matchedUser.gemini_api_key;
+                            }
+                            if (matchedUser.google_client_id) {
+                                localStorage.setItem('yt_automator_oauth_client_id', matchedUser.google_client_id);
+                                if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = matchedUser.google_client_id;
+                            }
+                            if (matchedUser.supabase_url) {
+                                localStorage.setItem('yt_automator_supabase_url', matchedUser.supabase_url);
+                                if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = matchedUser.supabase_url;
+                            }
+                            if (matchedUser.supabase_anon_key) {
+                                localStorage.setItem('yt_automator_supabase_key', matchedUser.supabase_anon_key);
+                                if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = matchedUser.supabase_anon_key;
+                            }
+
                             const userRole = matchedUser.role || 'standard';
                             const expDate = matchedUser.expired_at || new Date(Date.now() + 30*86400000).toISOString();
                             applyUserPermissions(userRole, expDate, matchedUser.username || email);
                             closeLoginModal();
-                            showToast(`Selamat datang ${matchedUser.username || email}!`, 'success');
+                            showToast(`Selamat datang ${matchedUser.username || email}! Konfigurasi berhasil dimuat dari Supabase.`, 'success');
                             return;
                         }
                     }
@@ -2276,18 +2294,47 @@
             }
         }
 
-        function saveSettings() {
+        async function saveSettings() {
             try {
-                if (elements.inputGeminiKey) localStorage.setItem('yt_automator_gemini_key', elements.inputGeminiKey.value.trim());
+                const geminiKey = elements.inputGeminiKey ? elements.inputGeminiKey.value.trim() : '';
+                const oauthClientId = elements.inputOAuthClientId ? elements.inputOAuthClientId.value.trim() : '';
+                const supabaseUrl = elements.inputSupabaseUrl ? elements.inputSupabaseUrl.value.trim() : '';
+                const supabaseAnonKey = elements.inputSupabaseKey ? elements.inputSupabaseKey.value.trim() : '';
+
+                if (elements.inputGeminiKey) localStorage.setItem('yt_automator_gemini_key', geminiKey);
                 if (elements.selectGeminiModel) localStorage.setItem('yt_automator_gemini_model', elements.selectGeminiModel.value);
-                if (elements.inputOAuthClientId) localStorage.setItem('yt_automator_oauth_client_id', elements.inputOAuthClientId.value.trim());
+                if (elements.inputOAuthClientId) localStorage.setItem('yt_automator_oauth_client_id', oauthClientId);
                 if (elements.selectDefaultPrivacy) localStorage.setItem('yt_automator_default_privacy', elements.selectDefaultPrivacy.value);
                 if (elements.selectDefaultCategory) localStorage.setItem('yt_automator_default_category', elements.selectDefaultCategory.value);
                 if (elements.selectDefaultKids) localStorage.setItem('yt_automator_default_kids', elements.selectDefaultKids.value);
-                if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', elements.inputSupabaseUrl.value.trim());
-                if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', elements.inputSupabaseKey.value.trim());
+                if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', supabaseUrl);
+                if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', supabaseAnonKey);
 
-                showToast('Pengaturan berhasil disimpan!', 'success');
+                // Simpan kunci pengguna aktif ke database Supabase
+                const activeUsername = state.supabase?.username || localStorage.getItem('yt_automator_user_name');
+                const url = supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
+                const key = supabaseAnonKey || localStorage.getItem('yt_automator_supabase_key');
+
+                if (activeUsername && url && key && window.supabase) {
+                    const client = window.supabase.createClient(url, key);
+                    await client.from('profiles').update({
+                        gemini_api_key: geminiKey,
+                        google_client_id: oauthClientId,
+                        supabase_url: supabaseUrl,
+                        supabase_anon_key: supabaseAnonKey
+                    }).or(`username.eq.${activeUsername},id.eq.${activeUsername}`);
+                }
+
+                // Sembunyikan modal/panel pengaturan secara otomatis
+                const panel = document.getElementById('settings-panel');
+                const txt = document.getElementById('txt-toggle-settings');
+                if (panel) {
+                    panel.classList.add('hidden');
+                    state.settingsCollapsed = true;
+                    if (txt) txt.textContent = 'Buka Pengaturan API';
+                }
+
+                showToast('Pengaturan berhasil disimpan ke Database & disembunyikan!', 'success');
             } catch (e) {
                 showToast('Gagal menyimpan pengaturan: ' + e.message, 'error');
             }
