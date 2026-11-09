@@ -1065,8 +1065,27 @@
                     const userRole = matchedUser.role || 'standard';
                     const expDate = matchedUser.expired_at;
                     
-                    if (matchedUser.gemini_api_key && elements.inputGeminiKey) elements.inputGeminiKey.value = matchedUser.gemini_api_key;
-                    if (matchedUser.google_client_id && elements.inputOAuthClientId) elements.inputOAuthClientId.value = matchedUser.google_client_id;
+                    // Synchronize API & DB credentials in Real-Time from Supabase User Profile
+                    if (matchedUser.gemini_api_key) {
+                        state.geminiApiKey = matchedUser.gemini_api_key;
+                        localStorage.setItem('yt_automator_gemini_key', matchedUser.gemini_api_key);
+                        if (elements.inputGeminiKey) elements.inputGeminiKey.value = matchedUser.gemini_api_key;
+                    }
+                    if (matchedUser.google_client_id) {
+                        state.oauthClientId = matchedUser.google_client_id;
+                        localStorage.setItem('yt_automator_oauth_client_id', matchedUser.google_client_id);
+                        if (elements.inputOAuthClientId) elements.inputOAuthClientId.value = matchedUser.google_client_id;
+                    }
+                    if (matchedUser.supabase_url) {
+                        state.supabaseUrl = matchedUser.supabase_url;
+                        localStorage.setItem('yt_automator_supabase_url', matchedUser.supabase_url);
+                        if (elements.inputSupabaseUrl) elements.inputSupabaseUrl.value = matchedUser.supabase_url;
+                    }
+                    if (matchedUser.supabase_anon_key) {
+                        state.supabaseKey = matchedUser.supabase_anon_key;
+                        localStorage.setItem('yt_automator_supabase_key', matchedUser.supabase_anon_key);
+                        if (elements.inputSupabaseKey) elements.inputSupabaseKey.value = matchedUser.supabase_anon_key;
+                    }
 
                     localStorage.setItem('yt_automator_logged_user', JSON.stringify({
                         username: matchedUser.username,
@@ -1076,7 +1095,7 @@
 
                     applyUserPermissions(userRole, expDate, matchedUser.username);
                     closeLoginModal();
-                    showToast(`Selamat datang ${matchedUser.username}!`, 'success');
+                    showToast(`Selamat datang ${matchedUser.username}! Kunci API berhasil diselaraskan secara real-time dari Supabase.`, 'success');
                     return;
                 }
 
@@ -1107,36 +1126,70 @@
             const mobileBtnLogout = document.getElementById('mobile-btn-logout');
             const mobileRoleBadge = document.getElementById('mobile-role-badge');
             const lblRoleName = document.getElementById('lbl-role-name');
-            const supabaseCard = document.getElementById('supabase-config-card');
 
             if (landingSection) landingSection.classList.add('hidden');
             if (mainWorkspace) mainWorkspace.classList.remove('hidden');
+
             if (userAuthBadge) userAuthBadge.classList.remove('hidden');
             if (btnOpenLogin) btnOpenLogin.classList.add('hidden');
             if (btnOpenLoginMobile) btnOpenLoginMobile.classList.add('hidden');
             if (btnToggleSettings) btnToggleSettings.classList.remove('hidden');
             if (btnGuideHeader) btnGuideHeader.classList.remove('hidden');
+
             if (mobileBtnSettings) mobileBtnSettings.classList.remove('hidden');
             if (mobileBtnGuide) mobileBtnGuide.classList.remove('hidden');
             if (mobileBtnLogout) mobileBtnLogout.classList.remove('hidden');
 
-            if (lblRoleName) lblRoleName.textContent = role.toUpperCase() + ' Member';
-            if (mobileRoleBadge) mobileRoleBadge.textContent = username + ` (${role.toUpperCase()})`;
+            if (lblRoleName) {
+                lblRoleName.textContent = role === 'admin' ? 'Administrator' : role === 'vip' ? 'VIP Member' : 'Standard Member';
+            }
+
+            if (mobileRoleBadge) {
+                mobileRoleBadge.textContent = role === 'admin' ? '👑 Admin' : role === 'vip' ? '⭐ VIP Member' : '🔹 Standard Member';
+            }
 
             if (role === 'admin') {
                 if (btnAdmin) btnAdmin.classList.remove('hidden');
                 if (mobileBtnAdmin) mobileBtnAdmin.classList.remove('hidden');
-                if (supabaseCard) supabaseCard.classList.remove('hidden');
+                document.getElementById('supabase-config-card')?.classList.remove('hidden');
             } else {
                 if (btnAdmin) btnAdmin.classList.add('hidden');
                 if (mobileBtnAdmin) mobileBtnAdmin.classList.add('hidden');
-                if (supabaseCard) supabaseCard.classList.add('hidden');
+                document.getElementById('supabase-config-card')?.classList.add('hidden');
             }
+        }
 
-            if (role === 'standard') {
-                if (elements.selectGeminiModel) {
-                    elements.selectGeminiModel.value = 'gemini-2.5-flash';
+        async function saveSettings() {
+            state.geminiApiKey = elements.inputGeminiKey?.value.trim() || '';
+            state.oauthClientId = elements.inputOAuthClientId?.value.trim() || '';
+            state.selectedGeminiModel = elements.selectGeminiModel?.value || 'gemini-3.6-flash';
+            state.supabaseUrl = elements.inputSupabaseUrl?.value.trim() || '';
+            state.supabaseKey = elements.inputSupabaseKey?.value.trim() || '';
+
+            localStorage.setItem('yt_automator_gemini_key', state.geminiApiKey);
+            localStorage.setItem('yt_automator_oauth_client_id', state.oauthClientId);
+            localStorage.setItem('yt_automator_gemini_model', state.selectedGeminiModel);
+            localStorage.setItem('yt_automator_supabase_url', state.supabaseUrl);
+            localStorage.setItem('yt_automator_supabase_key', state.supabaseKey);
+
+            // Synchronize active user settings to Supabase Real-Time DB
+            const loggedUsername = state.supabase?.username || JSON.parse(localStorage.getItem('yt_automator_logged_user') || '{}').username;
+            if (loggedUsername && state.supabaseUrl && state.supabaseKey && window.supabase) {
+                try {
+                    const client = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+                    await client.from('profiles').update({
+                        gemini_api_key: state.geminiApiKey,
+                        google_client_id: state.oauthClientId,
+                        supabase_url: state.supabaseUrl,
+                        supabase_anon_key: state.supabaseKey
+                    }).eq('username', loggedUsername);
+                    showToast('Pengaturan & Kunci API tersimpan & ter-sync di Supabase!', 'success');
+                } catch (err) {
+                    console.error("Gagal sync pengaturan ke Supabase:", err);
+                    showToast('Pengaturan lokal tersimpan, namun gagal sync ke Supabase: ' + err.message, 'error');
                 }
+            } else {
+                showToast('Pengaturan berhasil disimpan!', 'success');
             }
         }
 
@@ -1736,7 +1789,7 @@
 
             try {
                 const client = window.supabase.createClient(url, key);
-                const { data, error } = await client.from('profiles').select('*').order('created_at', { ascending: false });
+                const { data, error } = await client.from('profiles').select('*');
 
                 if (error) throw error;
 
@@ -1818,7 +1871,11 @@
                     username: username,
                     password: password,
                     role: role,
-                    expired_at: new Date(expired_at).toISOString()
+                    expired_at: new Date(expired_at).toISOString(),
+                    gemini_api_key: state.geminiApiKey || localStorage.getItem('yt_automator_gemini_key') || null,
+                    google_client_id: state.oauthClientId || localStorage.getItem('yt_automator_oauth_client_id') || null,
+                    supabase_url: url,
+                    supabase_anon_key: key
                 };
 
                 const { error } = await client.from('profiles').upsert(payload, { onConflict: 'id' });
