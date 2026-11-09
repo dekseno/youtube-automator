@@ -1493,7 +1493,7 @@
             });
         }
 
-        function saveAdminUser() {
+        async function saveAdminUser() {
             const usernameInput = document.getElementById('admin-input-username');
             const passwordInput = document.getElementById('admin-input-password');
             const roleInput = document.getElementById('admin-input-role');
@@ -1519,10 +1519,32 @@
 
             if (editIdx >= 0) {
                 users[editIdx] = { ...users[editIdx], username, password, role, expired_at };
-                showToast('Berhasil memperbarui data user!', 'success');
             } else {
                 users.push({ id: 'u_' + Date.now(), username, password, role, expired_at });
-                showToast('Berhasil menambahkan member baru!', 'success');
+            }
+
+            // Simpan / Upsert data user baru langsung ke database Supabase
+            const url = state.supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
+            const key = state.supabaseKey || localStorage.getItem('yt_automator_supabase_key');
+            if (url && key && window.supabase) {
+                try {
+                    const client = window.supabase.createClient(url, key);
+                    await client.from('profiles').upsert({
+                        username: username,
+                        password: password,
+                        role: role,
+                        expired_at: new Date(expired_at).toISOString(),
+                        gemini_api_key: localStorage.getItem('yt_automator_gemini_key') || null,
+                        google_client_id: localStorage.getItem('yt_automator_oauth_client_id') || null,
+                        supabase_url: url,
+                        supabase_anon_key: key
+                    }, { onConflict: 'username' });
+                    showToast(`User ${username} berhasil disimpan ke Supabase!`, 'success');
+                } catch(err) {
+                    console.error("Supabase Save Error:", err);
+                }
+            } else {
+                showToast(editIdx >= 0 ? 'Berhasil memperbarui data user (Lokal)' : 'Berhasil menambahkan member baru (Lokal)', 'success');
             }
 
             localStorage.setItem('yt_automator_managed_users', JSON.stringify(users));
@@ -2310,19 +2332,20 @@
                 if (elements.inputSupabaseUrl) localStorage.setItem('yt_automator_supabase_url', supabaseUrl);
                 if (elements.inputSupabaseKey) localStorage.setItem('yt_automator_supabase_key', supabaseAnonKey);
 
-                // Simpan kunci pengguna aktif ke database Supabase
+                // Simpan/Upsert kunci pengguna aktif ke database Supabase
                 const activeUsername = state.supabase?.username || localStorage.getItem('yt_automator_user_name');
                 const url = supabaseUrl || localStorage.getItem('yt_automator_supabase_url');
                 const key = supabaseAnonKey || localStorage.getItem('yt_automator_supabase_key');
 
                 if (activeUsername && url && key && window.supabase) {
                     const client = window.supabase.createClient(url, key);
-                    await client.from('profiles').update({
+                    await client.from('profiles').upsert({
+                        username: activeUsername,
                         gemini_api_key: geminiKey,
                         google_client_id: oauthClientId,
                         supabase_url: supabaseUrl,
                         supabase_anon_key: supabaseAnonKey
-                    }).or(`username.eq.${activeUsername},id.eq.${activeUsername}`);
+                    }, { onConflict: 'username' });
                 }
 
                 // Sembunyikan modal/panel pengaturan secara otomatis
